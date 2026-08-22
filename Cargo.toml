@@ -4,4 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-num_traits = "0.2"
+num-traits = "0.2"
+
+[features]
+# enable fused multiply add instructions. Feature gating this is an idea from
+# the interpN crate.
+fma = []
