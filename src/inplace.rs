@@ -7,13 +7,16 @@
 )]
 use core::iter::Sum;
 use core::num::NonZero;
-use num_traits::{Bounded, ConstOne, ConstZero, Float, FloatConst};
+use num_traits::{ConstOne, ConstZero, Float};
 
 use super::Error;
 use crate::{
     FusedMuladd, TransmittableBoundaryExtension,
     strided::{StridedSliceArgs, StridedSliceMut},
 };
+
+#[cfg(test)]
+mod test;
 
 // TODO: figure out the data layout here.. should I use slices and steps, pointers
 // and steps, or iterators? Iterators are probably the most idiomatic, but
@@ -28,7 +31,7 @@ use crate::{
 /// transmitted boundary condition, meaning the data is processed only on the
 /// original domain.
 #[expect(unused_variables, dead_code)]
-pub(crate) unsafe fn apply_exponential_filter_in_place<F>(
+pub(crate) fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: &mut [F],
