@@ -14,4 +14,5 @@ std = []
 num-traits = "0.2"
 
 [dev-dependencies]
-float-cmp = "0.10"
+float-cmp = "=0.10"
+test-case = "=3.3.1"
