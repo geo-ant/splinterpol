@@ -30,7 +30,7 @@ mod test;
 /// This is algorithm 3 from the Briand & Monasse paper for approach 2 with a
 /// transmitted boundary condition, meaning the data is processed only on the
 /// original domain.
-#[expect(unused_variables, dead_code)]
+#[expect(dead_code)]
 pub(crate) fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
@@ -45,7 +45,10 @@ pub(crate) fn apply_exponential_filter_in_place<F>(
     // which makes things annoying and complicated I think and defeats the purpose
     // of keeping all this nice and in place. As-is, we can just use one variable
     // for temporary storage.
-    truncation_n: NonZero<usize>,
+    // NOTE: in the Briand and Monasse paper N is the truncation INDEX,
+    // not the number of elements to be truncated. The element at index N is
+    // counted for the initialization.
+    truncation_idx: usize,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
 where
@@ -65,14 +68,14 @@ where
     )
     .ok_or(Error::Internal)?;
 
-    if truncation_n >= count {
+    if truncation_idx >= count.get() {
         return Err(Error::NotEnoughData);
     }
 
     // this should not happen in practice but this is important to ensure that
     // the i32 cast of the index based on the truncation number doesn't
     // exceed the i32 limit
-    if truncation_n.get() > i32::MAX as usize {
+    if truncation_idx > i32::MAX as usize {
         return Err(Error::Limits);
     }
 
@@ -105,7 +108,7 @@ where
                         // index is added twice in total: once with exponent 0
                         // (the signal_first term above) and once with exponent 1
                         // (the j = 0 term of this sum).
-                        .take(truncation_n.get())
+                        .take(truncation_idx)
                         .enumerate()
                         // NOTE: this cast is okay because we bounds-check the
                         // truncation n above
@@ -116,7 +119,7 @@ where
                 signal
                     .iter()
                     .copied()
-                    .take(truncation_n.get() + 1)
+                    .take(truncation_idx + 1)
                     .enumerate()
                     // NOTE: this cast is okay because we bounds-check the
                     // truncation n above
@@ -129,7 +132,7 @@ where
                         .iter()
                         .rev()
                         .copied()
-                        .take(truncation_n.get())
+                        .take(truncation_idx)
                         .enumerate()
                         // NOTE: this cast is okay because we bounds-check the
                         // truncation n above
@@ -190,7 +193,7 @@ where
                             * signal
                                 .iter()
                                 .copied()
-                                .take(truncation_n.get())
+                                .take(truncation_idx)
                                 .enumerate()
                                 .map(|(j, s)| s * alpha.powi(j as i32))
                                 .sum())
