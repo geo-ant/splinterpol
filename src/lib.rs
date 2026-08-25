@@ -5,13 +5,17 @@
     clippy::panic,
     clippy::panic_in_result_fn,
     clippy::panicking_unwrap,
-    unsafe_code
+    unsafe_code,
+    clippy::alloc_instead_of_core
 )]
 
 use num_traits::Float;
 
 mod inplace;
 mod strided;
+
+// #[cfg(feature = "__benchmarking")]
+pub mod bench_exports;
 
 #[cfg(test)]
 mod test_utils;

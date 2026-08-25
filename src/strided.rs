@@ -109,12 +109,14 @@ impl<'a, T> StridedSliceMut<'a, T> {
 impl<'a, T> Index<usize> for StridedSliceMut<'a, T> {
     type Output = T;
 
+    #[inline(always)]
     fn index(&self, index: usize) -> &Self::Output {
         self.data.index(self.to_index(index))
     }
 }
 
 impl<'a, T> IndexMut<usize> for StridedSliceMut<'a, T> {
+    #[inline(always)]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.data.index_mut(self.to_index(index))
     }
