@@ -9,10 +9,21 @@ edition = "2024"
 fma = []
 # allow dependency on the standard library (i.e. disabling the `no_std`)
 std = []
+# only for internal benchmarking purposes
+__benchmarking = []
 
 [dependencies]
-num-traits = "0.2"
+# see: docs.rs/crate/num-traits/latest
+# this is the way to use the no-std version of the crate
+num-traits = {version = "0.2", default-features = false, features = ["libm"]}
 
 [dev-dependencies]
 float-cmp = "=0.10"
 test-case = "=3.3.1"
+criterion = "0.8"
+
+[[bench]]
+harness = false
+name = "expfilter"
+# NOTE: we have to manually enable the feature, otherwise this benchmark won't run
+required-features = ["__benchmarking"]
