@@ -1,4 +1,12 @@
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::panic_in_result_fn,
+    clippy::panicking_unwrap,
+    unsafe_code
+)]
 
 use num_traits::Float;
 

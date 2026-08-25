@@ -9,6 +9,7 @@ use crate::{
 
 /// reference results generated with my fork of the Briand&Monasse repository,
 /// see: https://github.com/geo-ant/reference_bspline_interpolation
+/// using the `efip` executable
 
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",

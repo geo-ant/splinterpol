@@ -1,10 +1,3 @@
-#[deny(
-    clippy::unwrap_used,
-    clippy::expect_used,
-    clippy::panic,
-    clippy::panic_in_result_fn,
-    clippy::panicking_unwrap
-)]
 use core::iter::Sum;
 use core::num::NonZero;
 use num_traits::{ConstOne, ConstZero, Float};
@@ -30,7 +23,7 @@ mod test;
 /// This is algorithm 3 from the Briand & Monasse paper for approach 2 with a
 /// transmitted boundary condition, meaning the data is processed only on the
 /// original domain.
-#[expect(dead_code)]
+// #[expect(dead_code)]
 pub(crate) fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
