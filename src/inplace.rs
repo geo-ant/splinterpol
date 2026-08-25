@@ -100,26 +100,27 @@ where
                     + signal
                         .iter()
                         .copied()
-                        // we get N-1 elements here because the first element is already
-                        // added above. The mirrored extension is  ...cba|abcdef|,
-                        // which is why the element at the first index is added
-                        // twice, once with exponent 0 and once with exponent 1
-                        // for alpha.
-                        .take(truncation_n.get() - 1)
+                        // we take N elements here. The mirrored extension is
+                        // ...cba|abcdef|, which is why the element at the first
+                        // index is added twice in total: once with exponent 0
+                        // (the signal_first term above) and once with exponent 1
+                        // (the j = 0 term of this sum).
+                        .take(truncation_n.get())
                         .enumerate()
                         // NOTE: this cast is okay because we bounds-check the
                         // truncation n above
-                        .map(|(j, s)| s.powi((j + 1) as i32))
+                        .map(|(j, s)| s * alpha.powi((j + 1) as i32))
                         .sum()
             }
             TransmittableBoundaryExtension::WholeSymmetric => {
                 signal
                     .iter()
                     .copied()
+                    .take(truncation_n.get() + 1)
                     .enumerate()
                     // NOTE: this cast is okay because we bounds-check the
                     // truncation n above
-                    .map(|(j, s)| s.powi(j as i32))
+                    .map(|(j, s)| s * alpha.powi(j as i32))
                     .sum()
             }
             TransmittableBoundaryExtension::Periodic => {
@@ -128,11 +129,11 @@ where
                         .iter()
                         .rev()
                         .copied()
-                        .take(truncation_n.get() - 1)
+                        .take(truncation_n.get())
                         .enumerate()
                         // NOTE: this cast is okay because we bounds-check the
                         // truncation n above
-                        .map(|(j, s)| s.powi((j + 1) as i32))
+                        .map(|(j, s)| s * alpha.powi((j + 1) as i32))
                         .sum()
             }
         }
@@ -172,7 +173,6 @@ where
     // in there as well... not only does this have terrible ILP, the compiler
     // likely can't even use SIMD instructions here
 
-    let prev: F;
     for idx in 1..signal.len() {
         // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
         signal[idx] = signal[idx - 1].fmuladd(alpha, signal[idx]);
@@ -190,18 +190,18 @@ where
                             * signal
                                 .iter()
                                 .copied()
-                                .take(truncation_n.get() - 1)
+                                .take(truncation_n.get())
                                 .enumerate()
                                 .map(|(j, s)| s * alpha.powi(j as i32))
                                 .sum())
             }
-            TransmittableBoundaryExtension::Mirrored => alpha * (alpha - F::ONE) * signal_last,
+            TransmittableBoundaryExtension::Mirrored => alpha / (alpha - F::ONE) * signal_last,
             TransmittableBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal
                     .get(signal.len() - 2)
                     .copied()
                     .ok_or(Error::NotEnoughData)?;
-                signal_last + alpha * signal_2nd_to_last
+                alpha / (alpha * alpha - F::ONE) * (signal_last + alpha * signal_2nd_to_last)
             }
         }
     };
@@ -209,7 +209,7 @@ where
     let l_end = signal.len() - 1;
     signal[l_end] = s_lend;
 
-    for idx in (0..l_end - 1).rev() {
+    for idx in (0..l_end).rev() {
         signal[idx] = alpha * (signal[idx + 1] - signal[idx]);
     }
 

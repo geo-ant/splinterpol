@@ -3,12 +3,15 @@ name = "spleen"
 version = "0.1.0"
 edition = "2024"
 
-[dependencies]
-num-traits = "0.2"
-
 [features]
 # enable fused multiply add instructions. Feature gating this is an idea from
 # the interpN crate.
 fma = []
 # allow dependency on the standard library (i.e. disabling the `no_std`)
 std = []
+
+[dependencies]
+num-traits = "0.2"
+
+[dev-dependencies]
+float-cmp = "0.10"

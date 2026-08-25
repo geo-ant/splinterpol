@@ -5,6 +5,9 @@ use num_traits::Float;
 mod inplace;
 mod strided;
 
+#[cfg(test)]
+mod test_utils;
+
 /// trait exposing a fused mul-add or a fallback if the instruction doesn't exist
 /// Idea taken from the interpN crate.
 pub(crate) trait FusedMuladd {
