@@ -1,6 +1,6 @@
 use std::num::NonZero;
 
-use float_cmp::{approx_eq, assert_approx_eq};
+use float_cmp::{Ulps, approx_eq, assert_approx_eq};
 
 use crate::{inplace::apply_exponential_filter_in_place, test_utils::read_f64le};
 
@@ -24,10 +24,5 @@ fn exponential_filter_reproduces_reference_results() {
     )
     .unwrap();
 
-    assert_approx_eq!(
-        &[f64],
-        &expected.as_slice()[0..10],
-        &data.as_slice()[0..10],
-        ulps = 2
-    );
+    assert_approx_eq!(&[f64], expected.as_slice(), data.as_slice(), ulps = 4);
 }
