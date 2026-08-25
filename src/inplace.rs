@@ -94,50 +94,37 @@ where
         let signal_first = signal.first().copied().ok_or(Error::NotEnoughData)?;
         match boundary_extension {
             TransmittableBoundaryExtension::Mirrored => {
-                // this should give better instruction level parallelism than using
-                // the recursion, but it's probably not gonna matter since this
-                // is only one initialization value and the truncation N is small anyways,
-                // so this is a great example of premature optimization, but I want
-                // it that way so stfu...
-                signal_first
-                    + signal
-                        .iter()
-                        .copied()
-                        // we take N elements here. The mirrored extension is
-                        // ...cba|abcdef|, which is why the element at the first
-                        // index is added twice in total: once with exponent 0
-                        // (the signal_first term above) and once with exponent 1
-                        // (the j = 0 term of this sum).
-                        .take(truncation_idx)
-                        .enumerate()
-                        // NOTE: this cast is okay because we bounds-check the
-                        // truncation n above
-                        .map(|(j, s)| s * alpha.powi((j + 1) as i32))
-                        .sum()
+                // NOTE: this is true for all the boundary code. I'm reusing the
+                // same logic of recursively calculating a^j = a * a^(j-1) that
+                // the reference C-code uses. If I use a^j = a.powi(j), I might
+                // get better ILP (and actually better floating point accuracy
+                // I think, but the code doesn't reproduce the float-identical
+                // results anymore.
+                let mut acc = signal_first;
+                let mut pow = F::ONE;
+                for s in signal.iter().copied().take(truncation_idx) {
+                    pow = pow * alpha;
+                    acc = acc + s * pow;
+                }
+                acc
             }
             TransmittableBoundaryExtension::WholeSymmetric => {
-                signal
-                    .iter()
-                    .copied()
-                    .take(truncation_idx + 1)
-                    .enumerate()
-                    // NOTE: this cast is okay because we bounds-check the
-                    // truncation n above
-                    .map(|(j, s)| s * alpha.powi(j as i32))
-                    .sum()
+                let mut acc = signal_first;
+                let mut pow = F::ONE;
+                for s in signal.iter().copied().skip(1).take(truncation_idx) {
+                    pow = pow * alpha;
+                    acc = acc + s * pow;
+                }
+                acc
             }
             TransmittableBoundaryExtension::Periodic => {
-                signal_first
-                    + signal
-                        .iter()
-                        .rev()
-                        .copied()
-                        .take(truncation_idx)
-                        .enumerate()
-                        // NOTE: this cast is okay because we bounds-check the
-                        // truncation n above
-                        .map(|(j, s)| s * alpha.powi((j + 1) as i32))
-                        .sum()
+                let mut acc = signal_first;
+                let mut pow = F::ONE;
+                for s in signal.iter().rev().copied().take(truncation_idx) {
+                    pow = pow * alpha;
+                    acc = acc + s * pow;
+                }
+                acc
             }
         }
     };
@@ -187,16 +174,13 @@ where
         let signal_last = signal.last().copied().ok_or(Error::NotEnoughData)?;
         match boundary_extension {
             TransmittableBoundaryExtension::Periodic => {
-                -alpha
-                    * (signal_last
-                        + alpha
-                            * signal
-                                .iter()
-                                .copied()
-                                .take(truncation_idx)
-                                .enumerate()
-                                .map(|(j, s)| s * alpha.powi(j as i32))
-                                .sum())
+                let mut acc = signal_last;
+                let mut pow = F::ONE;
+                for s in signal.iter().copied().take(truncation_idx) {
+                    pow = pow * alpha;
+                    acc = acc + s * pow;
+                }
+                -alpha * acc
             }
             TransmittableBoundaryExtension::Mirrored => alpha / (alpha - F::ONE) * signal_last,
             TransmittableBoundaryExtension::WholeSymmetric => {
