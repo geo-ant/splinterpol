@@ -65,13 +65,6 @@ where
         return Err(Error::NotEnoughData);
     }
 
-    // this should not happen in practice but this is important to ensure that
-    // the i32 cast of the index based on the truncation number doesn't
-    // exceed the i32 limit
-    if truncation_idx > i32::MAX as usize {
-        return Err(Error::Limits);
-    }
-
     debug_assert!(
         -F::ONE < alpha && alpha < F::ZERO,
         "internal error: pole must be in (-1,0)"
@@ -156,9 +149,19 @@ where
     // in there as well... not only does this have terrible ILP, the compiler
     // likely can't even use SIMD instructions here
 
+    // NOTE PERF: this loop is actually much slower, I guess because it has the
+    // idx-1 in there which the compiler can't prove we reuse. So store it on the
+    // stack (rather register) manually...
+    // for idx in 1..signal.len() {
+    //     signal[idx] = signal[idx - 1].fmuladd(alpha, signal[idx]);
+    // }
+    // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
+    let mut last = signal[0];
     for idx in 1..signal.len() {
-        // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
-        signal[idx] = signal[idx - 1].fmuladd(alpha, signal[idx]);
+        let cur = signal[idx];
+        let new = last.fmuladd(alpha, cur); // one vfmadd, carried in `last` register
+        signal[idx] = new;
+        last = new;
     }
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
@@ -189,8 +192,16 @@ where
     let l_end = signal.len() - 1;
     signal[l_end] = s_lend;
 
+    // for idx in (0..l_end).rev() {
+    //     signal[idx] = alpha * (signal[idx + 1] - signal[idx]);
+    // }
+    // anti-causal filter: signal[idx] = alpha * (signal[idx+1] - signal[idx])
+    let mut last = signal[l_end];
     for idx in (0..l_end).rev() {
-        signal[idx] = alpha * (signal[idx + 1] - signal[idx]);
+        let cur = signal[idx];
+        let new = alpha * (last - cur);
+        signal[idx] = new;
+        last = new;
     }
 
     Ok(())

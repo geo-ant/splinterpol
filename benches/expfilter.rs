@@ -28,23 +28,31 @@ where
 }
 
 fn bench_exponential_filter(c: &mut Criterion) {
-    let mut data = make_random_data(65535, -100f64..100f64, Some(12345678910));
+    // pristine source data; each iteration filters a fresh copy so we always
+    // measure filtering the same unfiltered input (not re-filtering smoothed data)
+    let data = make_random_data(65535, -100f64..100f64, Some(12345678910));
 
     let alpha = -0.28;
     c.bench_function("foo", move |b| {
         let data_len = data.len();
-        b.iter(|| {
-            apply_exponential_filter_in_place(
-                alpha,
-                &mut data,
-                0,
-                NonZero::new(1).unwrap(),
-                NonZero::new(data_len).unwrap(),
-                1000,
-                spleen::TransmittableBoundaryExtension::Periodic,
-            )
-            .unwrap()
-        })
+        b.iter_batched(
+            // setup: produce a fresh, unfiltered copy (not timed)
+            || data.clone(),
+            // routine: filter the fresh copy (timed)
+            |mut fresh| {
+                apply_exponential_filter_in_place(
+                    alpha,
+                    &mut fresh,
+                    0,
+                    NonZero::new(1).unwrap(),
+                    NonZero::new(data_len).unwrap(),
+                    1000,
+                    spleen::TransmittableBoundaryExtension::Periodic,
+                )
+                .unwrap()
+            },
+            criterion::BatchSize::SmallInput,
+        )
     });
 }
 
