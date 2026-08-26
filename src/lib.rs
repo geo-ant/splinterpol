@@ -14,7 +14,7 @@ use num_traits::Float;
 mod inplace;
 mod strided;
 
-// #[cfg(feature = "__benchmarking")]
+// #[cfg(feature = "__bench_internal")]
 pub mod bench_exports;
 
 #[cfg(test)]
