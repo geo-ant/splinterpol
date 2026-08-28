@@ -4,8 +4,8 @@ use core::num::NonZero;
 use num_traits::{ConstOne, ConstZero, Float};
 
 use crate::{
-    Error, TransmittableBoundaryExtension,
-    inplace::apply_exponential_filter_in_place as apply_exponential_filter_in_place_internal,
+    Error, FusedMuladd, TransmittableBoundaryExtension,
+    inplace::apply_exponential_filter_in_place_1d as apply_exponential_filter_in_place_internal,
 };
 
 pub fn apply_exponential_filter_in_place<F>(
@@ -29,13 +29,11 @@ pub fn apply_exponential_filter_in_place<F>(
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
 where
-    F: Float + ConstOne + ConstZero + Sum,
+    F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
     apply_exponential_filter_in_place_internal(
         alpha,
         signal,
-        first,
-        stride,
         count,
         truncation_idx,
         boundary_extension,

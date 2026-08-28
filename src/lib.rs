@@ -5,11 +5,12 @@
     clippy::panic,
     clippy::panic_in_result_fn,
     clippy::panicking_unwrap,
-    unsafe_code,
+    // unsafe_code,
     clippy::alloc_instead_of_core
 )]
+#![warn(unsafe_code)]
 
-use num_traits::Float;
+use core::num::NonZero;
 
 mod inplace;
 mod strided;
@@ -22,19 +23,26 @@ mod test_utils;
 
 /// trait exposing a fused mul-add or a fallback if the instruction doesn't exist
 /// Idea taken from the interpN crate.
-pub(crate) trait FusedMuladd {
+pub trait FusedMuladd {
     fn fmuladd(self, factor: Self, addend: Self) -> Self;
 }
 
-impl<T> FusedMuladd for T
-where
-    T: Float,
-{
+impl FusedMuladd for f64 {
     #[inline(always)]
     fn fmuladd(self, factor: Self, addend: Self) -> Self {
-        #[cfg(feature = "fma")]
+        // NOTE(geo) when inspecting the assembly it looks like using
+        // the std::mul_add emits better instructions compared to the
+        // libm-based Float::mul_add implementation. However, to be
+        // honest I haven't seen that change the actual performance,
+        // so this might be overengineering. But it's cheap so what
+        // the heck...
+        #[cfg(all(feature = "fma", feature = "std"))]
         {
-            self.mul_add(factor, addend)
+            f64::mul_add(self, factor, addend)
+        }
+        #[cfg(all(feature = "fma", not(feature = "std")))]
+        {
+            num_traits::Float::mul_add(self, factor, addend)
         }
         #[cfg(not(feature = "fma"))]
         {
@@ -62,14 +70,15 @@ pub enum Error {
 /// Briand & Monasse paper (cf also Algorithm 5 therein). Note that constant
 /// extension can _not_ be written as a transmittable boundary condition.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[repr(u8)]
 pub enum TransmittableBoundaryExtension {
     /// Signal `abcde` is extended to `...cba|abcde|edc` and is called
     /// _half-symmetric_ in the Briand & Monasse paper.
-    Mirrored,
+    Mirrored = 1,
     /// Signal `abcde` is extended to `...dcb|abcde|dcb...`
-    WholeSymmetric,
+    WholeSymmetric = 2,
     /// Signal `abcde` is extended to `...cde|abcde|abc...`
-    Periodic,
+    Periodic = 3,
 }
 
 /// re-export some dependencies with significance for the public interface
@@ -77,4 +86,34 @@ pub enum TransmittableBoundaryExtension {
 pub mod reexports {
     /// the `num-traits` crate
     pub use num_traits;
+}
+
+#[inline(never)]
+pub fn expf64(
+    // the pole, -1 < alpha < 0
+    alpha: f64,
+    signal: &mut [f64],
+    first: usize,
+    stride: NonZero<usize>,
+    count: NonZero<usize>,
+    //NOTE: in theory, this N can be larger than the amount of elements
+    // but we're restricting it here
+    // TODO: if we want to allow this to be larger, we would have to have
+    // temporary storage for the original elements and implement some wraparound,
+    // which makes things annoying and complicated I think and defeats the purpose
+    // of keeping all this nice and in place. As-is, we can just use one variable
+    // for temporary storage.
+    // NOTE: in the Briand and Monasse paper N is the truncation INDEX,
+    // not the number of elements to be truncated. The element at index N is
+    // counted for the initialization.
+    truncation_idx: usize,
+    boundary_extension: TransmittableBoundaryExtension,
+) -> Result<(), Error> {
+    inplace::apply_exponential_filter_in_place_1d(
+        alpha,
+        signal,
+        count,
+        truncation_idx,
+        boundary_extension,
+    )
 }

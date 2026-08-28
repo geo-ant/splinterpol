@@ -3,7 +3,7 @@ use std::num::NonZero;
 use float_cmp::assert_approx_eq;
 
 use crate::{
-    TransmittableBoundaryExtension, inplace::apply_exponential_filter_in_place,
+    TransmittableBoundaryExtension, inplace::apply_exponential_filter_in_place_1d,
     test_utils::read_f64le,
 };
 
@@ -106,11 +106,9 @@ fn exponential_filter_reproduces_reference_results(
     let expected = read_f64le(expected);
 
     let data_len = data.len().try_into().unwrap();
-    apply_exponential_filter_in_place(
+    apply_exponential_filter_in_place_1d(
         alpha,
         data.as_mut_slice(),
-        0,
-        NonZero::new(1).unwrap(),
         data_len,
         truncation_index,
         extension,

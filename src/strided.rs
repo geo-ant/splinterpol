@@ -101,6 +101,16 @@ impl<'a, T> StridedSliceMut<'a, T> {
     }
 
     #[inline(always)]
+    pub fn as_slice(&self) -> &[T] {
+        self.data
+    }
+
+    #[inline(always)]
+    pub fn as_slice_mut(&mut self) -> &mut [T] {
+        self.data
+    }
+
+    #[inline(always)]
     fn to_index(&self, element_index: usize) -> usize {
         self.first + element_index * self.stride.get()
     }
