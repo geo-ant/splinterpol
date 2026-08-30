@@ -1,7 +1,10 @@
+use std::num::NonZero;
+
 use float_cmp::assert_approx_eq;
 
 use crate::{
-    TransmittableBoundaryExtension, inplace::apply_exponential_filter_in_place_1d,
+    TransmittableBoundaryExtension,
+    inplace::{apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_strided},
     test_utils::read_f64le,
 };
 
@@ -100,11 +103,34 @@ fn exponential_filter_reproduces_reference_results(
     alpha: f64,
     extension: TransmittableBoundaryExtension,
 ) {
-    let mut data = read_f64le(data);
+    let orig = read_f64le(data);
+    let mut data = orig.clone();
     let expected = read_f64le(expected);
 
     apply_exponential_filter_in_place_1d(alpha, data.as_mut_slice(), truncation_index, extension)
         .unwrap();
+
+    assert_approx_eq!(
+        &[f64],
+        expected.as_slice(),
+        data.as_slice(),
+        // NOTE: we're bit identical to the reference implementation
+        ulps = 0,
+        epsilon = 0.
+    );
+
+    let count = NonZero::new(orig.len()).unwrap();
+    let mut data = orig;
+    apply_exponential_filter_in_place_strided(
+        alpha,
+        data.as_mut_slice(),
+        0,
+        const { NonZero::new(1).unwrap() },
+        count,
+        truncation_index,
+        extension,
+    )
+    .unwrap();
 
     assert_approx_eq!(
         &[f64],
