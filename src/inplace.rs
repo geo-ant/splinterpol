@@ -24,6 +24,8 @@ mod test;
 /// transmitted boundary condition, meaning the data is processed only on the
 /// original domain.
 // #[expect(dead_code)]
+#[allow(unsafe_code)]
+#[expect(dead_code)]
 pub(crate) fn apply_exponential_filter_in_place_strided<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
@@ -259,7 +261,6 @@ pub(crate) fn apply_exponential_filter_in_place_1d<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: &mut [F],
-    count: NonZero<usize>,
     //NOTE: in theory, this N can be larger than the amount of elements
     // but we're restricting it here
     // TODO: if we want to allow this to be larger, we would have to have
@@ -281,11 +282,7 @@ where
         return Err(Error::NoData);
     }
 
-    if count.get() * stride.get() > signal.len() {
-        return Err(Error::OutOfBounds);
-    }
-
-    if truncation_idx >= count.get() {
+    if truncation_idx >= signal.len() {
         return Err(Error::NotEnoughData);
     }
 
@@ -384,7 +381,7 @@ where
     // TODO PERF: investigate further...
     let mut last = signal[0];
     let mut idx = stride.get();
-    let end_idx = (count.get() - 1) * stride.get();
+    let end_idx = (signal.len() - 1) * stride.get();
     if end_idx >= signal.len() {
         return Err(Error::OutOfBounds);
     }

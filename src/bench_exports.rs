@@ -1,6 +1,4 @@
 use core::iter::Sum;
-use core::num::NonZero;
-
 use num_traits::{ConstOne, ConstZero, Float};
 
 use crate::{
@@ -12,9 +10,6 @@ pub fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: &mut [F],
-    first: usize,
-    stride: NonZero<usize>,
-    count: NonZero<usize>,
     //NOTE: in theory, this N can be larger than the amount of elements
     // but we're restricting it here
     // TODO: if we want to allow this to be larger, we would have to have
@@ -31,11 +26,5 @@ pub fn apply_exponential_filter_in_place<F>(
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
-    apply_exponential_filter_in_place_internal(
-        alpha,
-        signal,
-        count,
-        truncation_idx,
-        boundary_extension,
-    )
+    apply_exponential_filter_in_place_internal(alpha, signal, truncation_idx, boundary_extension)
 }

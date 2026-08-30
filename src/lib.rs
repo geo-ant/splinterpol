@@ -10,8 +10,6 @@
 )]
 #![warn(unsafe_code)]
 
-use core::num::NonZero;
-
 mod inplace;
 mod strided;
 
@@ -93,9 +91,6 @@ pub fn expf64(
     // the pole, -1 < alpha < 0
     alpha: f64,
     signal: &mut [f64],
-    first: usize,
-    stride: NonZero<usize>,
-    count: NonZero<usize>,
     //NOTE: in theory, this N can be larger than the amount of elements
     // but we're restricting it here
     // TODO: if we want to allow this to be larger, we would have to have
@@ -109,11 +104,5 @@ pub fn expf64(
     truncation_idx: usize,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error> {
-    inplace::apply_exponential_filter_in_place_1d(
-        alpha,
-        signal,
-        count,
-        truncation_idx,
-        boundary_extension,
-    )
+    inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
 }

@@ -15,6 +15,7 @@ pub(crate) struct StridedSliceArgs {
     pub count: NonZero<usize>,
 }
 
+#[expect(dead_code)]
 impl<'a, T> StridedSliceMut<'a, T> {
     pub fn new(args: StridedSliceArgs, data: &'a mut [T]) -> Option<Self> {
         let StridedSliceArgs {
@@ -48,7 +49,7 @@ impl<'a, T> StridedSliceMut<'a, T> {
     #[inline(always)]
     pub fn iter_mut(
         &'a mut self,
-    ) -> impl Iterator<Item = &'_ mut T> + ExactSizeIterator + DoubleEndedIterator {
+    ) -> impl ExactSizeIterator<Item = &'a mut T> + DoubleEndedIterator {
         self.data
             .iter_mut()
             .skip(self.first)
@@ -57,7 +58,7 @@ impl<'a, T> StridedSliceMut<'a, T> {
     }
 
     #[inline(always)]
-    pub fn iter(&'a self) -> impl Iterator<Item = &'_ T> + ExactSizeIterator + DoubleEndedIterator {
+    pub fn iter(&'a self) -> impl ExactSizeIterator<Item = &'a T> + DoubleEndedIterator {
         self.data
             .iter()
             .skip(self.first)

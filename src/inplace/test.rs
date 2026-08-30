@@ -1,5 +1,3 @@
-use std::num::NonZero;
-
 use float_cmp::assert_approx_eq;
 
 use crate::{
@@ -105,15 +103,8 @@ fn exponential_filter_reproduces_reference_results(
     let mut data = read_f64le(data);
     let expected = read_f64le(expected);
 
-    let data_len = data.len().try_into().unwrap();
-    apply_exponential_filter_in_place_1d(
-        alpha,
-        data.as_mut_slice(),
-        data_len,
-        truncation_index,
-        extension,
-    )
-    .unwrap();
+    apply_exponential_filter_in_place_1d(alpha, data.as_mut_slice(), truncation_index, extension)
+        .unwrap();
 
     assert_approx_eq!(
         &[f64],
