@@ -277,7 +277,6 @@ pub(crate) fn apply_exponential_filter_in_place_1d<F>(
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
-    let stride = const { NonZero::new(1).unwrap() };
     if signal.is_empty() {
         return Err(Error::NoData);
     }
@@ -366,9 +365,7 @@ where
     // in 1D, then calculate the recurrence relation inside the 1D block and then
     // transmit the boundardy values across to all other blocks meaning boundary
     // value for block i is added to all blocks j with j > i.
-    // NOTE 3: this is probably very simd-unfriendly since we have a stride
-    // in there as well... not only does this have terrible ILP, the compiler
-    // likely can't even use SIMD instructions here
+    //
 
     // NOTE PERF: this loop is actually much slower, I guess because it has the
     // idx-1 in there which the compiler can't prove we reuse. So store it on the
@@ -376,12 +373,13 @@ where
     // for idx in 1..signal.len() {
     //     signal[idx] = signal[idx - 1].fmuladd(alpha, signal[idx]);
     // }
+    // NOTE PERF UPDATE: this was for strided access. Now maybe this is different...
     // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
     // NOTE PERF: here's some godbolt: https://godbolt.org/z/vrv5TGT18
     // TODO PERF: investigate further...
     let mut last = signal[0];
-    let mut idx = stride.get();
-    let end_idx = (signal.len() - 1) * stride.get();
+    let mut idx = 1;
+    let end_idx = signal.len() - 1;
     if end_idx >= signal.len() {
         return Err(Error::OutOfBounds);
     }
@@ -395,7 +393,7 @@ where
         let new = last.fmuladd(alpha, cur);
         signal[idx] = new;
         last = new;
-        idx += stride.get();
+        idx += 1;
     }
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
@@ -426,7 +424,7 @@ where
     let l_end = signal.len() - 1;
     signal[l_end] = s_lend;
 
-    let mut idx = end_idx - stride.get();
+    let mut idx = end_idx - 1;
     let mut last = signal[end_idx];
 
     loop {
@@ -437,7 +435,7 @@ where
         if idx == 0 {
             break;
         }
-        idx -= stride.get();
+        idx -= 1;
     }
 
     Ok(())
