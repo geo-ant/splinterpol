@@ -43,9 +43,6 @@ fn bench_exponential_filter(c: &mut Criterion) {
                 apply_exponential_filter_in_place(
                     alpha,
                     &mut fresh,
-                    0,
-                    NonZero::new(1).unwrap(),
-                    NonZero::new(data_len).unwrap(),
                     1000,
                     spleen::TransmittableBoundaryExtension::Periodic,
                 )

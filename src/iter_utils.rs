@@ -1,6 +1,8 @@
+use core::marker::PhantomData;
 use core::num::NonZero;
 use core::ops::Index;
 use core::ops::IndexMut;
+use core::ptr::NonNull;
 
 pub(crate) struct StridedSliceMut<'a, T> {
     data: &'a mut [T],
@@ -130,5 +132,92 @@ impl<'a, T> IndexMut<usize> for StridedSliceMut<'a, T> {
     #[inline(always)]
     fn index_mut(&mut self, index: usize) -> &mut Self::Output {
         self.data.index_mut(self.to_index(index))
+    }
+}
+
+pub(crate) struct StridedPointerAccess<T> {
+    ptr: *mut T,
+    stride: NonZero<usize>,
+    count: usize,
+}
+
+impl<T> StridedPointerAccess<T> {
+    pub unsafe fn new(ptr: *mut T, stride: NonZero<usize>, count: usize) -> Option<Self> {
+        if ptr.is_null() {
+            return None;
+        }
+        Some(Self { ptr, stride, count })
+    }
+
+    pub fn at(&self, index: usize) -> T {
+        if index < self.count {
+            unsafe { self.ptr.add(index * self.stride.get()).read() }
+        } else {
+            panic!(
+                "out of bounds access of index {} in [0, {})",
+                index, self.count
+            );
+        }
+    }
+
+    pub fn at_mut(&'_ mut self, index: usize) -> WriteAccessAt<'_, T> {
+        if index < self.count {
+            unsafe {
+                WriteAccessAt {
+                    ptr: self.ptr.add(index * self.stride.get()),
+                    phantom: Default::default(),
+                }
+            }
+        } else {
+            panic!(
+                "out of bounds access of index {} in [0, {})",
+                index, self.count
+            );
+        }
+    }
+}
+
+pub(crate) struct WriteAccessAt<'a, T> {
+    ptr: *mut T,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T> WriteAccessAt<'a, T> {
+    pub fn write(self, val: T) {
+        unsafe {
+            self.ptr.write(val);
+        }
+    }
+}
+
+impl<'a, T> Drop for WriteAccessAt<'a, T> {
+    fn drop(&mut self) {
+        const {
+            panic!(
+                "you're using this wrong. Call either read or write after requesting index access"
+            )
+        }
+    }
+}
+
+pub(crate) struct StridedPointerIter<'a, T> {
+    cur: *mut T,
+    stride: NonZero<usize>,
+    end: *mut T,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T: 'a> Iterator for StridedPointerIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cur == self.end {
+            return None;
+        }
+        unsafe {
+            let item = self.cur.as_ref_unchecked();
+            self.cur = self.cur.add(self.stride.get());
+            Some(item)
+        }
     }
 }

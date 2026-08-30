@@ -11,7 +11,7 @@
 #![warn(unsafe_code)]
 
 mod inplace;
-mod strided;
+mod iter_utils;
 
 // #[cfg(feature = "__bench_internal")]
 pub mod bench_exports;
