@@ -26,5 +26,13 @@ pub fn apply_exponential_filter_in_place<F>(
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
+    // crate::inplace::apply_exponential_filter_in_place_strided(
+    //     alpha,
+    //     signal.as_mut_ptr(),
+    //     const { NonZero::new(1).unwrap() },
+    //     NonZero::new(signal.len()).unwrap(),
+    //     truncation_idx,
+    //     boundary_extension,
+    // )
     apply_exponential_filter_in_place_internal(alpha, signal, truncation_idx, boundary_extension)
 }

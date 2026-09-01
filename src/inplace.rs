@@ -3,10 +3,7 @@ use core::num::NonZero;
 use num_traits::{ConstOne, ConstZero, Float};
 
 use super::Error;
-use crate::{
-    FusedMuladd, TransmittableBoundaryExtension,
-    iter_utils::{StridedPointerAccess, StridedSliceArgs, StridedSliceMut},
-};
+use crate::{FusedMuladd, TransmittableBoundaryExtension, iter_utils::StridedPointerAccess};
 
 #[cfg(test)]
 mod test;
@@ -121,14 +118,12 @@ where
         if idx > end_idx {
             break;
         }
-        unsafe {
-            // let cur = signal.as_slice()[idx];
-            let cur = signal.at(idx);
-            let new = last.fmuladd(alpha, cur);
-            signal.at_mut(idx).write(new);
-            last = new;
-            idx += stride.get();
-        }
+        // let cur = signal.as_slice()[idx];
+        let cur = signal.at(idx);
+        let new = last.fmuladd(alpha, cur);
+        signal.at_mut(idx).write(new);
+        last = new;
+        idx += stride.get();
     }
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
