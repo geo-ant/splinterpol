@@ -123,8 +123,7 @@ fn exponential_filter_reproduces_reference_results(
     let mut data = orig;
     apply_exponential_filter_in_place_strided(
         alpha,
-        data.as_mut_slice(),
-        0,
+        data.as_mut_ptr(),
         const { NonZero::new(1).unwrap() },
         count,
         truncation_index,

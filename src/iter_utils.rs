@@ -1,4 +1,5 @@
 use core::marker::PhantomData;
+use core::mem::ManuallyDrop;
 use core::num::NonZero;
 use core::ops::Index;
 use core::ops::IndexMut;
@@ -138,19 +139,23 @@ impl<'a, T> IndexMut<usize> for StridedSliceMut<'a, T> {
 pub(crate) struct StridedPointerAccess<T> {
     ptr: *mut T,
     stride: NonZero<usize>,
-    count: usize,
+    count: NonZero<usize>,
 }
 
 impl<T> StridedPointerAccess<T> {
-    pub unsafe fn new(ptr: *mut T, stride: NonZero<usize>, count: usize) -> Option<Self> {
+    pub unsafe fn new(ptr: *mut T, stride: NonZero<usize>, count: NonZero<usize>) -> Option<Self> {
         if ptr.is_null() {
+            return None;
+        }
+        if count.get().overflowing_mul(stride.get()).1 {
             return None;
         }
         Some(Self { ptr, stride, count })
     }
 
+    #[inline(always)]
     pub fn at(&self, index: usize) -> T {
-        if index < self.count {
+        if index < self.count.get() {
             unsafe { self.ptr.add(index * self.stride.get()).read() }
         } else {
             panic!(
@@ -160,8 +165,9 @@ impl<T> StridedPointerAccess<T> {
         }
     }
 
+    #[inline(always)]
     pub fn at_mut(&'_ mut self, index: usize) -> WriteAccessAt<'_, T> {
-        if index < self.count {
+        if index < self.count.get() {
             unsafe {
                 WriteAccessAt {
                     ptr: self.ptr.add(index * self.stride.get()),
@@ -175,6 +181,48 @@ impl<T> StridedPointerAccess<T> {
             );
         }
     }
+
+    #[inline(always)]
+    pub fn iter(&'_ self) -> StridedPointerIter<'_, T> {
+        unsafe {
+            StridedPointerIter {
+                cur: self.ptr,
+                stride: self.stride,
+                end: self.ptr.add(self.count.get() * self.stride.get()),
+                phantom: Default::default(),
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub fn iter_mut(&'_ mut self) -> StridedPointerIterMut<'_, T> {
+        unsafe {
+            StridedPointerIterMut {
+                cur: self.ptr,
+                stride: self.stride,
+                end: self.ptr.add(self.count.get() * self.stride.get()),
+                phantom: Default::default(),
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub fn first(&self) -> T {
+        unsafe { self.ptr.read() }
+    }
+
+    #[inline(always)]
+    pub fn last(&self) -> T {
+        unsafe {
+            self.ptr
+                .add((self.count.get() - 1) * self.stride.get())
+                .read()
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.count.get()
+    }
 }
 
 pub(crate) struct WriteAccessAt<'a, T> {
@@ -183,9 +231,11 @@ pub(crate) struct WriteAccessAt<'a, T> {
 }
 
 impl<'a, T> WriteAccessAt<'a, T> {
+    #[inline(always)]
     pub fn write(self, val: T) {
+        let me = ManuallyDrop::new(self);
         unsafe {
-            self.ptr.write(val);
+            me.ptr.write(val);
         }
     }
 }
@@ -201,9 +251,9 @@ impl<'a, T> Drop for WriteAccessAt<'a, T> {
 }
 
 pub(crate) struct StridedPointerIter<'a, T> {
-    cur: *mut T,
+    cur: *const T,
     stride: NonZero<usize>,
-    end: *mut T,
+    end: *const T,
     phantom: PhantomData<&'a T>,
 }
 
@@ -219,5 +269,61 @@ impl<'a, T: 'a> Iterator for StridedPointerIter<'a, T> {
             self.cur = self.cur.add(self.stride.get());
             Some(item)
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<T> ExactSizeIterator for StridedPointerIter<'_, T> {
+    fn len(&self) -> usize {
+        unsafe { self.end.sub(self.cur as _) as usize / self.stride }
+    }
+}
+
+impl<T> DoubleEndedIterator for StridedPointerIter<'_, T> {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.end == self.cur {
+            return None;
+        }
+        let item = unsafe {
+            self.end = self.end.sub(self.stride.get());
+            self.end.as_ref_unchecked()
+        };
+        Some(item)
+    }
+}
+
+pub(crate) struct StridedPointerIterMut<'a, T> {
+    cur: *mut T,
+    stride: NonZero<usize>,
+    end: *mut T,
+    phantom: PhantomData<&'a T>,
+}
+
+impl<'a, T: 'a> Iterator for StridedPointerIterMut<'a, T> {
+    type Item = &'a mut T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.cur == self.end {
+            return None;
+        }
+        unsafe {
+            let item = self.cur.as_mut_unchecked();
+            self.cur = self.cur.add(self.stride.get());
+            Some(item)
+        }
+    }
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let len = self.len();
+        (len, Some(len))
+    }
+}
+
+impl<T> ExactSizeIterator for StridedPointerIterMut<'_, T> {
+    fn len(&self) -> usize {
+        unsafe { self.end.sub(self.cur as _) as usize / self.stride }
     }
 }
