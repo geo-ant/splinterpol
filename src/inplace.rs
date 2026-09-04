@@ -3,10 +3,44 @@ use core::num::NonZero;
 use num_traits::{ConstOne, ConstZero, Float};
 
 use super::Error;
-use crate::{FusedMuladd, TransmittableBoundaryExtension, iter_utils::StridedPointerAccess};
+use crate::{
+    FusedMuladd, TransmittableBoundaryExtension, bspline::BSpline, iter_utils::StridedPointerAccess,
+};
 
 #[cfg(test)]
 mod test;
+
+pub fn coefficients2d<F, B>(
+    bspline: B,
+    image_data: &mut [F],
+    width: usize,
+    height: usize,
+    epsilon: F,
+) -> Result<(), Error>
+where
+    F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
+    B: BSpline<F>,
+{
+    let expected_len = match width.overflowing_mul(height) {
+        (val, false) => val,
+        (_, true) => return Err(Error::Overflow),
+    };
+
+    if image_data.len() != expected_len {
+        return Err(Error::Dimensions);
+    }
+
+    // NOTE: this is almost certainly not the most efficient way of doing things,
+    // since the columns have massive stride typically,so a blocking strategy
+    // is the way to go here in general
+
+    // row filtering
+    for pole in bspline.poles() {
+        image_data.chunks_exact_mut(width).for_each(|row| todo!());
+    }
+
+    Ok(())
+}
 
 // TODO: figure out the data layout here.. should I use slices and steps, pointers
 // and steps, or iterators? Iterators are probably the most idiomatic, but
@@ -23,7 +57,7 @@ mod test;
 // #[expect(dead_code)]
 #[allow(unsafe_code)]
 #[cfg_attr(not(test), expect(dead_code))]
-pub(crate) fn apply_exponential_filter_in_place_strided<F>(
+pub(crate) unsafe fn apply_exponential_filter_in_place_strided<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: *mut F,

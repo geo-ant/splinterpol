@@ -10,8 +10,12 @@
 )]
 #![warn(unsafe_code)]
 
-mod inplace;
+pub mod inplace;
+mod internal;
 mod iter_utils;
+
+/// B-splines for interpolation
+pub mod bspline;
 
 // #[cfg(feature = "__bench_internal")]
 pub mod bench_exports;
@@ -61,6 +65,10 @@ pub enum Error {
     Limits,
     /// internal logic error
     Internal,
+    /// data doesn't match the given dimensions
+    Dimensions,
+    /// overflow occurred
+    Overflow,
 }
 
 /// Describes a way to extend the signal beyond the measured domain in a way

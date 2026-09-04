@@ -96,6 +96,7 @@ use crate::{
     -0.456,
     TransmittableBoundaryExtension::WholeSymmetric
 )]
+#[allow(unsafe_code)]
 fn exponential_filter_reproduces_reference_results(
     data: &str,
     expected: &str,
@@ -121,15 +122,17 @@ fn exponential_filter_reproduces_reference_results(
 
     let count = NonZero::new(orig.len()).unwrap();
     let mut data = orig;
-    apply_exponential_filter_in_place_strided(
-        alpha,
-        data.as_mut_ptr(),
-        const { NonZero::new(1).unwrap() },
-        count,
-        truncation_index,
-        extension,
-    )
-    .unwrap();
+    unsafe {
+        apply_exponential_filter_in_place_strided(
+            alpha,
+            data.as_mut_ptr(),
+            const { NonZero::new(1).unwrap() },
+            count,
+            truncation_index,
+            extension,
+        )
+        .unwrap();
+    }
 
     assert_approx_eq!(
         &[f64],
@@ -225,6 +228,7 @@ fn exponential_filter_reproduces_reference_results(
     -0.456,
     TransmittableBoundaryExtension::WholeSymmetric
 )]
+#[allow(unsafe_code)]
 fn exponential_filter_with_non_unit_stride(
     data: &str,
     expected: &str,
@@ -248,15 +252,17 @@ fn exponential_filter_with_non_unit_stride(
         .collect();
 
     let mut data = orig_strided;
-    apply_exponential_filter_in_place_strided(
-        alpha,
-        data.as_mut_ptr(),
-        const { NonZero::new(STRIDE).unwrap() },
-        count,
-        truncation_index,
-        extension,
-    )
-    .unwrap();
+    unsafe {
+        apply_exponential_filter_in_place_strided(
+            alpha,
+            data.as_mut_ptr(),
+            const { NonZero::new(STRIDE).unwrap() },
+            count,
+            truncation_index,
+            extension,
+        )
+        .unwrap();
+    }
 
     // now collapse the strided data again so we can compare
     let data: Vec<_> = data.chunks_exact(STRIDE).map(|chunk| chunk[0]).collect();
