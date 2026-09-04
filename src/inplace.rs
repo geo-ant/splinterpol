@@ -108,8 +108,8 @@ where
 
     // causal filtering, see algo 3 in the B&M paper lines 2-4
     let mut last = signal.at(0);
-    let mut idx = stride.get();
-    let end_idx = (count.get() - 1) * stride.get();
+    let mut idx = 1;
+    let end_idx = count.get() - 1;
     if end_idx > signal.len() {
         return Err(Error::OutOfBounds);
     }
@@ -123,7 +123,7 @@ where
         let new = last.fmuladd(alpha, cur);
         signal.at_mut(idx).write(new);
         last = new;
-        idx += stride.get();
+        idx += 1;
     }
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
@@ -166,7 +166,7 @@ where
     //     last = new;
     // }
 
-    let mut idx = end_idx - stride.get();
+    let mut idx = end_idx - 1;
     let mut last = signal.at(end_idx);
     loop {
         let cur = signal.at(idx);
@@ -176,7 +176,7 @@ where
         if idx == 0 {
             break;
         }
-        idx -= stride.get();
+        idx -= 1;
     }
 
     Ok(())
