@@ -4,22 +4,24 @@ use num_traits::{ConstOne, ConstZero, Float};
 
 use super::Error;
 use crate::{
-    FusedMuladd, TransmittableBoundaryExtension, bspline::BSpline, iter_utils::StridedPointerAccess,
+    FusedMuladd, TransmittableBoundaryExtension, bspline::BSpline,
+    internal::compute_truncation_indices, iter_utils::StridedPointerAccess,
 };
 
 #[cfg(test)]
 mod test;
 
-pub fn coefficients2d<F, B>(
+pub fn coefficients2d<F, B, const NPOLES: usize>(
     bspline: B,
     image_data: &mut [F],
     width: usize,
     height: usize,
     epsilon: F,
+    boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    B: BSpline<F>,
+    B: BSpline<F, NPOLES>,
 {
     let expected_len = match width.overflowing_mul(height) {
         (val, false) => val,
@@ -33,13 +35,32 @@ where
     // NOTE: this is almost certainly not the most efficient way of doing things,
     // since the columns have massive stride typically,so a blocking strategy
     // is the way to go here in general
+    //
+
+    let truncation_indices = compute_truncation_indices(bspline.poles(), F::ONE)?;
 
     // row filtering
-    for pole in bspline.poles() {
-        image_data.chunks_exact_mut(width).for_each(|row| todo!());
+    for (pole, truncation_index) in bspline
+        .poles()
+        .iter()
+        .copied()
+        .zip(truncation_indices.iter().copied())
+    {
+        image_data.chunks_exact_mut(width).try_for_each(|row| {
+            apply_exponential_filter_in_place_1d(pole, row, truncation_index, boundary_extension)
+        })?;
     }
 
-    Ok(())
+    // column filtering
+    // TODO: remove this horrible unsafe code. We should not have to do any of this
+    // for 2D sequential row-by row iteration. We can write an abstraction that
+    // safely returns column iterators for a row major mutable view of an array...
+    // but for parallel iterators we have to use unsafe code. But maybe I
+    // don't have to do any iterator stuff and I can use a blocking strategy
+    // with manual indexing right away anyways, so let's see if we can get this
+    // working and see how well it performs compared to the reference C impl
+
+    todo!()
 }
 
 // TODO: figure out the data layout here.. should I use slices and steps, pointers

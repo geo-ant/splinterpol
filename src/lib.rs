@@ -31,6 +31,8 @@ pub trait FusedMuladd {
 
 impl FusedMuladd for f64 {
     #[inline(always)]
+    /// try and make this a fused mul-add operation `self*factor+addend`
+    /// and fall back on non-fma when the FMA feature is not enabled.
     fn fmuladd(self, factor: Self, addend: Self) -> Self {
         // NOTE(geo) when inspecting the assembly it looks like using
         // the std::mul_add emits better instructions compared to the
