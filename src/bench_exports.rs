@@ -2,7 +2,7 @@ use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
 use crate::{
-    Error, FusedMuladd, TransmittableBoundaryExtension,
+    Error, TransmittableBoundaryExtension, fma::FusedMuladd,
     inplace::apply_exponential_filter_in_place_1d as apply_exponential_filter_in_place_internal,
 };
 

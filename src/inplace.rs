@@ -4,24 +4,39 @@ use num_traits::{ConstOne, ConstZero, Float};
 
 use super::Error;
 use crate::{
-    FusedMuladd, TransmittableBoundaryExtension, bspline::BSpline,
-    internal::compute_truncation_indices, iter_utils::StridedPointerAccess,
+    TransmittableBoundaryExtension,
+    bspline::{BSpline, BSpline3},
+    fma::FusedMuladd,
+    internal::compute_truncation_indices,
+    iter_utils::StridedPointerAccess,
 };
 
 #[cfg(test)]
 mod test;
 
-pub fn coefficients2d<F, B, const NPOLES: usize>(
-    bspline: B,
-    image_data: &mut [F],
+// just to check that the function can be called easily
+fn _foo() {
+    _ = coefficients2d(
+        BSpline3::<f64>::default(),
+        &mut [1.],
+        100,
+        100,
+        0.1,
+        TransmittableBoundaryExtension::Mirrored,
+    );
+}
+
+pub fn coefficients2d<B, const NPOLES: usize>(
+    _bspline: B,
+    image_data: &mut [B::Float],
     width: usize,
     height: usize,
-    epsilon: F,
+    epsilon: B::Float,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
 where
-    F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    B: BSpline<F, NPOLES>,
+    B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
+    B: BSpline<NPOLES>,
 {
     let expected_len = match width.overflowing_mul(height) {
         (val, false) => val,
@@ -32,24 +47,14 @@ where
         return Err(Error::Dimensions);
     }
 
+    let width = NonZero::new(width).ok_or(Error::NoData)?;
+    let height = NonZero::new(height).ok_or(Error::NoData)?;
+
     // NOTE: this is almost certainly not the most efficient way of doing things,
     // since the columns have massive stride typically,so a blocking strategy
     // is the way to go here in general
-    //
 
-    let truncation_indices = compute_truncation_indices(bspline.poles(), F::ONE)?;
-
-    // row filtering
-    for (pole, truncation_index) in bspline
-        .poles()
-        .iter()
-        .copied()
-        .zip(truncation_indices.iter().copied())
-    {
-        image_data.chunks_exact_mut(width).try_for_each(|row| {
-            apply_exponential_filter_in_place_1d(pole, row, truncation_index, boundary_extension)
-        })?;
-    }
+    let truncation_indices = compute_truncation_indices(&B::POLES, epsilon)?;
 
     // column filtering
     // TODO: remove this horrible unsafe code. We should not have to do any of this
@@ -60,7 +65,52 @@ where
     // with manual indexing right away anyways, so let's see if we can get this
     // working and see how well it performs compared to the reference C impl
 
-    todo!()
+    for (pole, truncation_index) in B::POLES
+        .iter()
+        .copied()
+        .zip(truncation_indices.iter().copied())
+    {
+        for col in 0..width.get() {
+            unsafe {
+                let col = image_data.as_mut_ptr().add(col);
+                apply_exponential_filter_in_place_strided(
+                    pole,
+                    col,
+                    width,
+                    height,
+                    truncation_index,
+                    boundary_extension,
+                )?;
+            }
+        }
+    }
+
+    // row filtering
+    for (pole, truncation_index) in B::POLES
+        .iter()
+        .copied()
+        .zip(truncation_indices.iter().copied())
+    {
+        image_data
+            .chunks_exact_mut(width.get())
+            .try_for_each(|row| {
+                apply_exponential_filter_in_place_1d(
+                    pole,
+                    row,
+                    truncation_index,
+                    boundary_extension,
+                )
+            })?;
+    }
+
+    if B::NORMALIZATION != B::Float::ONE {
+        let normalization = B::NORMALIZATION.powi(2);
+        image_data
+            .iter_mut()
+            .for_each(|val| *val = *val * normalization);
+    }
+    Ok(())
+    // Normalization
 }
 
 // TODO: figure out the data layout here.. should I use slices and steps, pointers
@@ -77,7 +127,7 @@ where
 /// original domain.
 // #[expect(dead_code)]
 #[allow(unsafe_code)]
-#[cfg_attr(not(test), expect(dead_code))]
+// #[cfg_attr(not(test), expect(dead_code))]
 pub(crate) unsafe fn apply_exponential_filter_in_place_strided<F>(
     // the pole, -1 < alpha < 0
     alpha: F,

@@ -1,5 +1,8 @@
-use crate::{Error, FusedMuladd};
+use crate::{Error, fma::FusedMuladd};
 use num_traits::{ConstOne, ConstZero, Float};
+
+#[cfg(test)]
+mod test;
 
 /// compute N^(i,epsilon') in eq (51) in the B&M paper, where i is the index
 /// of the corresponding pole and epsilon' is calculated from the given epsilon
@@ -11,6 +14,10 @@ pub fn compute_truncation_indices<F, const NPOLES: usize>(
 where
     F: Float + ConstOne + ConstZero + FusedMuladd,
 {
+    if epsilon <= F::ZERO || !epsilon.is_normal() {
+        return Err(Error::Precision);
+    }
+
     debug_assert!(
         poles
             .iter()
@@ -18,12 +25,13 @@ where
     );
 
     let rhon = compute_rhon(poles);
-    let mu = compute_mus(poles, epsilon);
+    let mu = compute_mus(poles);
     // NOTE that in section 5.1 in the B&M paper, the authors say that they
     // use the truncation index from eqn (51) but with a modified \epsilon'
     // where \epsilon' = rho^(n) \epsilon/2.
     let epsilon_prime = epsilon * rhon / (F::ONE + F::ONE);
-    let ln_epsilon_prime_rhon = epsilon_prime.ln();
+    // NOTE: we calculate ln(epsilon' * rho^(n)) here
+    let ln_epsilon_prime_rhon = (epsilon_prime * rhon).ln();
 
     let mut n_trunc = [0; NPOLES];
     let mut mu_prod = F::ONE;
@@ -40,6 +48,8 @@ where
 }
 
 /// compute `rho^n` from eq (52) from Briand and Monasse
+// NOTE: I wish we had const fn in traits, because the compute_rhon and compute_mu
+// functions could be comptime in theory...
 #[inline(always)]
 fn compute_rhon<F>(poles: &[F]) -> F
 where
@@ -61,7 +71,7 @@ where
 
 /// compute the {mu_j}_{j \in [0,NPOLES)} according to eq (50) from the B&M paper
 #[inline(always)]
-fn compute_mus<F, const NPOLES: usize>(poles: &[F; NPOLES], epsilon: F) -> [F; NPOLES]
+fn compute_mus<F, const NPOLES: usize>(poles: &[F; NPOLES]) -> [F; NPOLES]
 where
     F: Float + ConstOne + ConstZero + FusedMuladd,
 {

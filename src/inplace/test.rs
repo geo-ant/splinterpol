@@ -1,10 +1,13 @@
-use std::num::NonZero;
-
 use float_cmp::assert_approx_eq;
+use std::num::NonZero;
 
 use crate::{
     TransmittableBoundaryExtension,
-    inplace::{apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_strided},
+    bspline::BSpline3,
+    inplace::{
+        apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_strided,
+        coefficients2d,
+    },
     test_utils::read_f64le,
 };
 
@@ -274,5 +277,58 @@ fn exponential_filter_with_non_unit_stride(
         // NOTE: we're bit identical to the reference implementation
         ulps = 0,
         epsilon = 0.
+    );
+}
+
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric
+)]
+fn test_coefficients2d_bspline3(
+    data: &str,
+    expected: &str,
+    width: usize,
+    height: usize,
+    ext: TransmittableBoundaryExtension,
+) {
+    let orig = read_f64le(data);
+    let expected = read_f64le(expected);
+
+    let epsilon = 1e-5;
+
+    let mut image_data = orig.clone();
+    coefficients2d(
+        BSpline3::<f64>::default(),
+        &mut image_data,
+        width,
+        height,
+        epsilon,
+        ext,
+    )
+    .unwrap();
+
+    assert_approx_eq!(
+        &[f64],
+        &expected.as_slice()[100..125],
+        &image_data.as_slice()[100..125],
+        // NOTE: we're bit identical to the reference implementation
+        epsilon = f64::EPSILON // epsilon = 0.
     );
 }
