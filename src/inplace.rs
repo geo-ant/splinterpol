@@ -231,6 +231,19 @@ where
         idx += 1;
     }
 
+    // this is the same loop as above rewritten with iterators, which
+    // makes things not necessarily clearer
+    // signal
+    //     .iter_mut()
+    //     .skip(1)
+    //     .scan(last, |last, cur| {
+    //         let new = last.fmuladd(alpha, *cur);
+    //         *cur = new;
+    //         *last = *cur;
+    //         Some(())
+    //     })
+    //     .for_each(drop);
+
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
     // special cases in eqs. (55)-(66)
     let s_lend = {
@@ -284,6 +297,17 @@ where
         idx -= 1;
     }
 
+    // signal
+    //     .iter_mut()
+    //     .rev()
+    //     .skip(1)
+    //     .scan(last, |last, cur| {
+    //         let new = alpha * (*last - *cur);
+    //         *cur = new;
+    //         *last = *cur;
+    //         Some(())
+    //     })
+    //     .for_each(drop);
     Ok(())
 }
 
@@ -294,14 +318,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: &mut [F],
-    //NOTE: in theory, this N can be larger than the amount of elements
-    // but we're restricting it here
-    // TODO: if we want to allow this to be larger, we would have to have
-    // temporary storage for the original elements and implement some wraparound,
-    // which makes things annoying and complicated I think and defeats the purpose
-    // of keeping all this nice and in place. As-is, we can just use one variable
-    // for temporary storage.
-    // NOTE: in the Briand and Monasse paper N is the truncation INDEX,
+    // NOTE: like in the Briand and Monasse paper this is the truncation INDEX,
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
@@ -399,17 +416,8 @@ where
     // transmit the boundardy values across to all other blocks meaning boundary
     // value for block i is added to all blocks j with j > i.
     //
-
-    // NOTE PERF: this loop is actually much slower, I guess because it has the
-    // idx-1 in there which the compiler can't prove we reuse. So store it on the
-    // stack (rather register) manually...
-    // for idx in 1..signal.len() {
-    //     signal[idx] = signal[idx - 1].fmuladd(alpha, signal[idx]);
-    // }
-    // NOTE PERF UPDATE: this was for strided access. Now maybe this is different...
     // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
     // NOTE PERF: here's some godbolt: https://godbolt.org/z/vrv5TGT18
-    // TODO PERF: investigate further...
     let mut last = signal[0];
     let mut idx = 1;
     let end_idx = signal.len() - 1;
