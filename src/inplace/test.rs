@@ -326,10 +326,11 @@ fn test_coefficients2d_bspline3(
 
     assert_approx_eq!(
         &[f64],
-        &expected.as_slice()[100..125],
-        &image_data.as_slice()[100..125],
-        // NOTE: we're bit identical to the reference implementation
-        epsilon = f64::EPSILON // epsilon = 0.
+        &expected.as_slice(),
+        &image_data.as_slice(),
+        // tiny inaccuracies prevent us from being bit-identical, but this
+        // is good enough for all intents and purposes...
+        epsilon = 20. * f64::EPSILON
     );
 }
 
@@ -379,9 +380,8 @@ fn test_coefficients2d_bspline10(
 
     assert_approx_eq!(
         &[f64],
-        &expected.as_slice()[100..125],
-        &image_data.as_slice()[100..125],
-        // NOTE: we're bit identical to the reference implementation
-        epsilon = f64::EPSILON // epsilon = 0.
+        &expected.as_slice(),
+        &image_data.as_slice(),
+        epsilon = 2. * f64::EPSILON
     );
 }
