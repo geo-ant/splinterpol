@@ -8,6 +8,8 @@
     // unsafe_code,
     clippy::alloc_instead_of_core
 )]
+// TODO make this into a `deny` lint conditional on not having some feature
+// `with_unsafe` or `allow_unsafe` in there...
 #![warn(unsafe_code)]
 
 pub mod inplace;

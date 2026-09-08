@@ -50,6 +50,7 @@ impl BSpline<1> for BSpline3<f64> {
 }
 
 /// BSpline of order 10
+#[derive(Default, Debug, Clone, Copy)]
 pub struct BSpline10<T> {
     phantom: PhantomData<T>,
 }
