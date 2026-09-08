@@ -48,7 +48,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
                 )
                 .unwrap()
             },
-            criterion::BatchSize::SmallInput,
+            criterion::BatchSize::LargeInput,
         )
     });
 }
