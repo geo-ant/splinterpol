@@ -418,37 +418,43 @@ where
     //
     // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
     // NOTE PERF: here's some godbolt: https://godbolt.org/z/vrv5TGT18
-    let mut last = signal[0];
-    let mut idx = 1;
-    let end_idx = signal.len() - 1;
-    if end_idx >= signal.len() {
-        return Err(Error::OutOfBounds);
-    }
 
-    loop {
-        if idx > end_idx {
-            break;
-        }
-        // let cur = signal.as_slice()[idx];
-        let cur = signal[idx];
-        let new = last.fmuladd(alpha, cur);
-        signal[idx] = new;
-        last = new;
-        idx += 1;
-    }
+    // NOTE PERF: this loop might perform very very slighly faster
+    // than the iterator based implementation but not enough for me to abandon
+    // the iterators
+    // let mut last = signal[0];
+    // let mut idx = 1;
+    // let end_idx = signal.len() - 1;
+    // if end_idx >= signal.len() {
+    //     return Err(Error::OutOfBounds);
+    // }
+
+    // loop {
+    //     if idx > end_idx {
+    //         break;
+    //     }
+    //     // let cur = signal.as_slice()[idx];
+    //     let cur = signal[idx];
+    //     let new = last.fmuladd(alpha, cur);
+    //     signal[idx] = new;
+    //     last = new;
+    //     idx += 1;
+    // }
 
     // this is the same loop as above rewritten with iterators, which
     // makes things not necessarily clearer
-    // signal
-    //     .iter_mut()
-    //     .skip(1)
-    //     .scan(last, |last, cur| {
-    //         let new = last.fmuladd(alpha, *cur);
-    //         *cur = new;
-    //         *last = *cur;
-    //         Some(())
-    //     })
-    //     .for_each(drop);
+    let end_idx = signal.len() - 1;
+    let last = signal[0];
+    signal
+        .iter_mut()
+        .skip(1)
+        .scan(last, |last, cur| {
+            let new = last.fmuladd(alpha, *cur);
+            *cur = new;
+            *last = *cur;
+            Some(())
+        })
+        .for_each(drop);
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
     // special cases in eqs. (55)-(66)
@@ -477,31 +483,35 @@ where
 
     signal[end_idx] = s_lend;
 
-    let mut idx = end_idx - 1;
-    let mut last = signal[end_idx];
+    // NOTE PERF: this is the original loop that I replaced with iterators below.
+    // It performs maybe very very slighly better than the iterator based loop,
+    // but not enough for me to abandon the iterator loop.
+    // let mut idx = end_idx - 1;
+    // let mut last = signal[end_idx];
 
-    loop {
-        let cur = signal[idx];
-        let new = alpha * (last - cur);
-        signal[idx] = new;
-        last = new;
-        if idx == 0 {
-            break;
-        }
-        idx -= 1;
-    }
+    // loop {
+    //     let cur = signal[idx];
+    //     let new = alpha * (last - cur);
+    //     signal[idx] = new;
+    //     last = new;
+    //     if idx == 0 {
+    //         break;
+    //     }
+    //     idx -= 1;
+    // }
 
-    // signal
-    //     .iter_mut()
-    //     .rev()
-    //     .skip(1)
-    //     .scan(last, |last, cur| {
-    //         let new = alpha * (*last - *cur);
-    //         *cur = new;
-    //         *last = *cur;
-    //         Some(())
-    //     })
-    //     .for_each(drop);
+    let last = signal[end_idx];
+    signal
+        .iter_mut()
+        .rev()
+        .skip(1)
+        .scan(last, |last, cur| {
+            let new = alpha * (*last - *cur);
+            *cur = new;
+            *last = *cur;
+            Some(())
+        })
+        .for_each(drop);
 
     Ok(())
 }
