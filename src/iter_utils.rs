@@ -197,3 +197,82 @@ impl<T> ExactSizeIterator for StridedPointerIterMut<'_, T> {
         unsafe { self.end.sub(self.cur as _) as usize / self.stride }
     }
 }
+
+pub struct ColumnAccessMut<'a, T> {
+    slice: &'a mut [T],
+    row_len: usize,
+}
+
+pub trait StridedSlice {
+    type Item: Copy;
+    fn iter(&self) -> impl Iterator<Item = &Self::Item> + DoubleEndedIterator + ExactSizeIterator;
+    fn iter_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Self::Item> + DoubleEndedIterator + ExactSizeIterator;
+    fn first(&self) -> Option<Self::Item>;
+    fn last(&self) -> Option<Self::Item>;
+    fn second_to_last(&self) -> Option<Self::Item>;
+    fn set_last(&mut self, value: Self::Item);
+    fn set_first(&mut self, value: Self::Item);
+    fn is_empty(&self) -> bool;
+    fn len(&self) -> usize;
+}
+
+impl<'a, T> StridedSlice for &'a mut [T]
+where
+    T: Copy,
+{
+    type Item = T;
+
+    #[inline]
+    fn iter(&self) -> impl Iterator<Item = &Self::Item> + DoubleEndedIterator + ExactSizeIterator {
+        (&**self).iter()
+    }
+
+    #[inline]
+    fn iter_mut(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Self::Item> + DoubleEndedIterator + ExactSizeIterator {
+        (&mut **self).iter_mut()
+    }
+
+    #[inline]
+    fn first(&self) -> Option<Self::Item> {
+        (&**self).first().copied()
+    }
+
+    #[inline]
+    fn last(&self) -> Option<Self::Item> {
+        (&**self).last().copied()
+    }
+
+    #[inline]
+    fn set_last(&mut self, value: Self::Item) {
+        if let Some(last) = self.last_mut() {
+            *last = value;
+        }
+    }
+
+    #[inline]
+    fn second_to_last(&self) -> Option<Self::Item> {
+        let len = self.len();
+        if len >= 2 { Some(self[len - 2]) } else { None }
+    }
+
+    #[inline]
+    fn set_first(&mut self, value: Self::Item) {
+        if let Some(first) = self.first_mut() {
+            *first = value;
+        }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        (&**self).is_empty()
+    }
+
+    #[inline]
+    fn len(&self) -> usize {
+        (&**self).len()
+    }
+}

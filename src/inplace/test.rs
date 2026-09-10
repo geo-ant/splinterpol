@@ -5,8 +5,8 @@ use crate::{
     TransmittableBoundaryExtension,
     bspline::{BSpline3, BSpline10},
     inplace::{
-        apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_strided,
-        coefficients2d,
+        apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
+        apply_exponential_filter_in_place_strided, coefficients2d,
     },
     test_utils::read_f64le,
 };
@@ -124,7 +124,7 @@ fn exponential_filter_reproduces_reference_results(
     );
 
     let count = NonZero::new(orig.len()).unwrap();
-    let mut data = orig;
+    let mut data = orig.clone();
     unsafe {
         apply_exponential_filter_in_place_strided(
             alpha,
@@ -136,6 +136,24 @@ fn exponential_filter_reproduces_reference_results(
         )
         .unwrap();
     }
+
+    assert_approx_eq!(
+        &[f64],
+        expected.as_slice(),
+        data.as_slice(),
+        // NOTE: we're bit identical to the reference implementation
+        ulps = 0,
+        epsilon = 0.
+    );
+
+    let mut data = orig;
+    apply_exponential_filter_in_place_1d_iter(
+        alpha,
+        data.as_mut_slice(),
+        truncation_index,
+        extension,
+    )
+    .unwrap();
 
     assert_approx_eq!(
         &[f64],

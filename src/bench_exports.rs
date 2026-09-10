@@ -1,10 +1,7 @@
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
-use crate::{
-    Error, TransmittableBoundaryExtension, fma::FusedMuladd,
-    inplace::apply_exponential_filter_in_place_1d as apply_exponential_filter_in_place_internal,
-};
+use crate::{Error, TransmittableBoundaryExtension, fma::FusedMuladd};
 
 pub fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0
@@ -26,13 +23,17 @@ pub fn apply_exponential_filter_in_place<F>(
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
-    // crate::inplace::apply_exponential_filter_in_place_strided(
+    crate::inplace::apply_exponential_filter_in_place_1d(
+        alpha,
+        signal,
+        truncation_idx,
+        boundary_extension,
+    )
+
+    // crate::inplace::apply_exponential_filter_in_place_1d_iter(
     //     alpha,
-    //     signal.as_mut_ptr(),
-    //     const { NonZero::new(1).unwrap() },
-    //     NonZero::new(signal.len()).unwrap(),
+    //     signal,
     //     truncation_idx,
     //     boundary_extension,
     // )
-    apply_exponential_filter_in_place_internal(alpha, signal, truncation_idx, boundary_extension)
 }

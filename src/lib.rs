@@ -87,7 +87,13 @@ pub fn expf64(
     truncation_idx: usize,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error> {
-    inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
+    // inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
+    inplace::apply_exponential_filter_in_place_1d_iter(
+        alpha,
+        signal,
+        truncation_idx,
+        boundary_extension,
+    )
 }
 
 #[inline(never)]
