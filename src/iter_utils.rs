@@ -24,31 +24,33 @@ impl<T> StridedPointerAccess<T> {
 
     #[inline(always)]
     pub fn at(&self, index: usize) -> T {
-        if index < self.count.get() {
-            unsafe { self.ptr.add(index * self.stride.get()).read() }
-        } else {
-            panic!(
-                "out of bounds access of index {} in [0, {})",
-                index, self.count
-            );
-        }
+        // TODO re enable
+        // if index < self.count.get() {
+        unsafe { self.ptr.add(index * self.stride.get()).read() }
+        // } else {
+        //     panic!(
+        //         "out of bounds access of index {} in [0, {})",
+        //         index, self.count
+        //     );
+        // }
     }
 
     #[inline(always)]
     pub fn at_mut(&'_ mut self, index: usize) -> WriteAccessAt<'_, T> {
-        if index < self.count.get() {
-            unsafe {
-                WriteAccessAt {
-                    ptr: self.ptr.add(index * self.stride.get()),
-                    phantom: Default::default(),
-                }
+        // TODO re-enable
+        // if index < self.count.get() {
+        unsafe {
+            WriteAccessAt {
+                ptr: self.ptr.add(index * self.stride.get()),
+                phantom: Default::default(),
             }
-        } else {
-            panic!(
-                "out of bounds access of index {} in [0, {})",
-                index, self.count
-            );
         }
+        // } else {
+        //     panic!(
+        //         "out of bounds access of index {} in [0, {})",
+        //         index, self.count
+        //     );
+        // }
     }
 
     #[inline(always)]
@@ -203,19 +205,185 @@ pub struct ColumnAccessMut<'a, T> {
     row_len: usize,
 }
 
+impl<'a, T> ColumnAccessMut<'a, T> {
+    #[inline(always)]
+    pub fn new(row_major_data: &'a mut [T], row_len: usize, num_rows: usize) -> Option<Self> {
+        let (len, overflow) = row_len.overflowing_mul(num_rows);
+        if overflow {
+            return None;
+        }
+        if len != row_major_data.len() {
+            return None;
+        }
+        Some(Self {
+            slice: row_major_data,
+            row_len,
+        })
+    }
+}
+
+pub struct ColumnIteratorMut<'a, T> {
+    slice: &'a mut [T],
+    stride: usize,
+    count: usize,
+}
+
+// impl<'a, T> Iterator for ColumnIteratorMut<'a, T> {
+//     type Item = ColRefMut<'a, T>;
+
+//     fn next(&mut self) -> Option<Self::Item> {
+//         if self.slice.len() >= self.stride {
+//             let returned = Some(ColRefMut {
+//                 start: self.slice,
+//                 stride: self.stride,
+//                 count: self.count,
+//             });
+//             // self.slice = &mut self.slice[self.stride..];
+//             returned
+//         } else {
+//             None
+//         }
+//     }
+// }
+
+pub struct StridedMut<'a, T> {
+    data: &'a mut [T],
+    offset: usize,
+    stride: NonZero<usize>,
+    count: NonZero<usize>,
+}
+
+pub struct StridedAccessArgs {
+    pub offset: usize,
+    pub stride: NonZero<usize>,
+    pub count: NonZero<usize>,
+}
+
+impl<'a, T> StridedMut<'a, T> {
+    #[inline(always)]
+    pub fn new(data: &'a mut [T], access: StridedAccessArgs) -> Option<Self> {
+        if data.len() <= access.count.get() * access.stride.get() + access.offset {
+            Some(Self {
+                data,
+                offset: access.offset,
+                stride: access.stride,
+                count: access.count,
+            })
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a, T> StridedSlice for StridedMut<'a, T>
+where
+    T: Copy,
+{
+    type Item = T;
+
+    #[inline(always)]
+    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+        self.data
+            .iter()
+            .skip(self.offset)
+            .step_by(self.stride.get())
+            .take(self.count.get())
+    }
+    #[inline(always)]
+    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+        let last = self.offset + (self.count.get() - 1) * self.stride.get();
+        self.data[..=last]
+            .iter()
+            .rev()
+            .step_by(self.stride.get())
+            .take(self.count.get())
+    }
+
+    #[inline(always)]
+    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+        self.data
+            .iter_mut()
+            .skip(self.offset)
+            .step_by(self.stride.get())
+            .take(self.count.get())
+    }
+
+    #[inline(always)]
+    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+        let last = self.offset + (self.count.get() - 1) * self.stride.get();
+
+        self.data[..=last]
+            .iter_mut()
+            .rev()
+            .step_by(self.stride.get())
+            .take(self.count.get())
+    }
+
+    #[inline(always)]
+    fn ss_first(&self) -> Option<Self::Item> {
+        self.data.get(self.offset).copied()
+    }
+
+    #[inline(always)]
+    fn ss_last(&self) -> Option<Self::Item> {
+        self.data
+            .get(self.offset + self.stride.get() * (self.count.get() - 1))
+            .copied()
+    }
+
+    #[inline(always)]
+    fn ss_2nd_to_last(&self) -> Option<Self::Item> {
+        if self.count.get() < 2 {
+            return None;
+        }
+
+        self.data
+            .get((self.count.get() - 2) * self.stride.get() + self.offset)
+            .copied()
+    }
+
+    #[inline(always)]
+    fn ss_write_last(&mut self, value: Self::Item) {
+        if let Some(last) = self
+            .data
+            .get_mut(self.offset + (self.count.get() - 1) * self.stride.get())
+        {
+            *last = value;
+        }
+    }
+
+    #[inline(always)]
+    fn ss_write_first(&mut self, value: Self::Item) {
+        if let Some(first) = self.data.get_mut(self.offset) {
+            *first = value;
+        }
+    }
+
+    #[inline(always)]
+    fn ss_is_empty(&self) -> bool {
+        // NOTE is always false
+        self.count.get() == 0
+    }
+
+    #[inline(always)]
+    fn ss_len(&self) -> usize {
+        self.count.get()
+    }
+}
+
 pub trait StridedSlice {
     type Item: Copy;
-    fn iter(&self) -> impl Iterator<Item = &Self::Item> + DoubleEndedIterator + ExactSizeIterator;
-    fn iter_mut(
-        &mut self,
-    ) -> impl Iterator<Item = &mut Self::Item> + DoubleEndedIterator + ExactSizeIterator;
-    fn first(&self) -> Option<Self::Item>;
-    fn last(&self) -> Option<Self::Item>;
-    fn second_to_last(&self) -> Option<Self::Item>;
-    fn set_last(&mut self, value: Self::Item);
-    fn set_first(&mut self, value: Self::Item);
-    fn is_empty(&self) -> bool;
-    fn len(&self) -> usize;
+    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
+    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
+    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
+    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
+    fn ss_first(&self) -> Option<Self::Item>;
+    fn ss_last(&self) -> Option<Self::Item>;
+    fn ss_2nd_to_last(&self) -> Option<Self::Item>;
+    fn ss_write_last(&mut self, value: Self::Item);
+    fn ss_write_first(&mut self, value: Self::Item);
+    fn ss_is_empty(&self) -> bool;
+    fn ss_len(&self) -> usize;
 }
 
 impl<'a, T> StridedSlice for &'a mut [T]
@@ -225,54 +393,62 @@ where
     type Item = T;
 
     #[inline]
-    fn iter(&self) -> impl Iterator<Item = &Self::Item> + DoubleEndedIterator + ExactSizeIterator {
+    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
         (&**self).iter()
     }
 
     #[inline]
-    fn iter_mut(
-        &mut self,
-    ) -> impl Iterator<Item = &mut Self::Item> + DoubleEndedIterator + ExactSizeIterator {
+    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+        (&**self).iter().rev()
+    }
+
+    #[inline]
+    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
         (&mut **self).iter_mut()
     }
 
     #[inline]
-    fn first(&self) -> Option<Self::Item> {
+    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+        (&mut **self).iter_mut().rev()
+    }
+
+    #[inline]
+    fn ss_first(&self) -> Option<Self::Item> {
         (&**self).first().copied()
     }
 
     #[inline]
-    fn last(&self) -> Option<Self::Item> {
+    fn ss_last(&self) -> Option<Self::Item> {
         (&**self).last().copied()
     }
 
     #[inline]
-    fn set_last(&mut self, value: Self::Item) {
+    fn ss_write_last(&mut self, value: Self::Item) {
         if let Some(last) = self.last_mut() {
             *last = value;
         }
     }
 
     #[inline]
-    fn second_to_last(&self) -> Option<Self::Item> {
-        let len = self.len();
+    fn ss_2nd_to_last(&self) -> Option<Self::Item> {
+        let len = self.ss_len();
         if len >= 2 { Some(self[len - 2]) } else { None }
     }
 
     #[inline]
-    fn set_first(&mut self, value: Self::Item) {
+    fn ss_write_first(&mut self, value: Self::Item) {
         if let Some(first) = self.first_mut() {
             *first = value;
         }
     }
 
     #[inline]
-    fn is_empty(&self) -> bool {
+    fn ss_is_empty(&self) -> bool {
         (&**self).is_empty()
     }
 
     #[inline]
-    fn len(&self) -> usize {
+    fn ss_len(&self) -> usize {
         (&**self).len()
     }
 }
