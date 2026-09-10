@@ -5,6 +5,7 @@ use core::marker::PhantomData;
 use core::mem::ManuallyDrop;
 use core::num::NonZero;
 
+// TODO: bench again, but I think we can delete this...
 pub(crate) struct StridedPointerAccess<T> {
     ptr: *mut T,
     stride: NonZero<usize>,
@@ -200,57 +201,10 @@ impl<T> ExactSizeIterator for StridedPointerIterMut<'_, T> {
     }
 }
 
-pub struct ColumnAccessMut<'a, T> {
-    slice: &'a mut [T],
-    row_len: usize,
-}
-
-impl<'a, T> ColumnAccessMut<'a, T> {
-    #[inline(always)]
-    pub fn new(row_major_data: &'a mut [T], row_len: usize, num_rows: usize) -> Option<Self> {
-        let (len, overflow) = row_len.overflowing_mul(num_rows);
-        if overflow {
-            return None;
-        }
-        if len != row_major_data.len() {
-            return None;
-        }
-        Some(Self {
-            slice: row_major_data,
-            row_len,
-        })
-    }
-}
-
-pub struct ColumnIteratorMut<'a, T> {
-    slice: &'a mut [T],
-    stride: usize,
-    count: usize,
-}
-
-// impl<'a, T> Iterator for ColumnIteratorMut<'a, T> {
-//     type Item = ColRefMut<'a, T>;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-//         if self.slice.len() >= self.stride {
-//             let returned = Some(ColRefMut {
-//                 start: self.slice,
-//                 stride: self.stride,
-//                 count: self.count,
-//             });
-//             // self.slice = &mut self.slice[self.stride..];
-//             returned
-//         } else {
-//             None
-//         }
-//     }
-// }
-
 pub struct StridedMut<'a, T> {
     // start at first element of the column, end at last
     data: &'a mut [T],
     stride: NonZero<usize>,
-    count: NonZero<usize>,
 }
 
 pub struct StridedAccessArgs {
@@ -276,7 +230,6 @@ impl<'a, T> StridedMut<'a, T> {
         Some(Self {
             data: &mut data[access.offset..=last],
             stride: access.stride,
-            count: access.count,
         })
     }
 }
@@ -288,88 +241,81 @@ where
     type Item = T;
 
     #[inline(always)]
-    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
         self.data.iter().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
         self.data.iter().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
         self.data.iter_mut().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut_rev(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
         self.data.iter_mut().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn ss_first(&self) -> Option<Self::Item> {
+    fn strided_first(&self) -> Option<Self::Item> {
         self.data.first().copied()
     }
 
     #[inline(always)]
-    fn ss_last(&self) -> Option<Self::Item> {
+    fn strided_last(&self) -> Option<Self::Item> {
         self.data.last().copied()
     }
 
     #[inline(always)]
-    fn ss_2nd_to_last(&self) -> Option<Self::Item> {
-        if self.count.get() < 2 {
-            return None;
-        }
-
-        self.data
-            .get((self.count.get() - 2) * self.stride.get())
-            .copied()
+    fn strided_2nd_last(&self) -> Option<Self::Item> {
+        self.strided_iter_rev().skip(1).next().copied()
     }
 
     #[inline(always)]
-    fn ss_write_last(&mut self, value: Self::Item) {
-        if let Some(last) = self
-            .data
-            .get_mut((self.count.get() - 1) * self.stride.get())
-        {
+    fn strided_write_last(&mut self, value: Self::Item) {
+        if let Some(last) = self.data.last_mut() {
             *last = value;
         }
     }
 
     #[inline(always)]
-    fn ss_write_first(&mut self, value: Self::Item) {
+    fn strided_write_first(&mut self, value: Self::Item) {
         if let Some(first) = self.data.get_mut(0) {
             *first = value;
         }
     }
 
     #[inline(always)]
-    fn ss_is_empty(&self) -> bool {
-        // NOTE is always false
-        self.count.get() == 0
+    fn strided_is_empty(&self) -> bool {
+        self.data.is_empty()
     }
 
     #[inline(always)]
-    fn ss_len(&self) -> usize {
-        self.count.get()
+    fn strided_len(&self) -> usize {
+        self.data.len() / self.stride.get()
     }
 }
 
 pub trait StridedSlice {
     type Item: Copy;
-    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
-    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
-    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
-    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
-    fn ss_first(&self) -> Option<Self::Item>;
-    fn ss_last(&self) -> Option<Self::Item>;
-    fn ss_2nd_to_last(&self) -> Option<Self::Item>;
-    fn ss_write_last(&mut self, value: Self::Item);
-    fn ss_write_first(&mut self, value: Self::Item);
-    fn ss_is_empty(&self) -> bool;
-    fn ss_len(&self) -> usize;
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
+    fn strided_iter_mut_rev(&mut self)
+    -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
+    fn strided_first(&self) -> Option<Self::Item>;
+    fn strided_last(&self) -> Option<Self::Item>;
+    fn strided_2nd_last(&self) -> Option<Self::Item>;
+    fn strided_write_last(&mut self, value: Self::Item);
+    fn strided_write_first(&mut self, value: Self::Item);
+    fn strided_is_empty(&self) -> bool;
+    fn strided_len(&self) -> usize;
 }
 
 impl<'a, T> StridedSlice for &'a mut [T]
@@ -379,62 +325,64 @@ where
     type Item = T;
 
     #[inline]
-    fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
         (&**self).iter()
     }
 
     #[inline]
-    fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
         (&**self).iter().rev()
     }
 
     #[inline]
-    fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
         (&mut **self).iter_mut()
     }
 
     #[inline]
-    fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut_rev(
+        &mut self,
+    ) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
         (&mut **self).iter_mut().rev()
     }
 
     #[inline]
-    fn ss_first(&self) -> Option<Self::Item> {
+    fn strided_first(&self) -> Option<Self::Item> {
         (&**self).first().copied()
     }
 
     #[inline]
-    fn ss_last(&self) -> Option<Self::Item> {
+    fn strided_last(&self) -> Option<Self::Item> {
         (&**self).last().copied()
     }
 
     #[inline]
-    fn ss_write_last(&mut self, value: Self::Item) {
+    fn strided_write_last(&mut self, value: Self::Item) {
         if let Some(last) = self.last_mut() {
             *last = value;
         }
     }
 
     #[inline]
-    fn ss_2nd_to_last(&self) -> Option<Self::Item> {
-        let len = self.ss_len();
+    fn strided_2nd_last(&self) -> Option<Self::Item> {
+        let len = self.strided_len();
         if len >= 2 { Some(self[len - 2]) } else { None }
     }
 
     #[inline]
-    fn ss_write_first(&mut self, value: Self::Item) {
+    fn strided_write_first(&mut self, value: Self::Item) {
         if let Some(first) = self.first_mut() {
             *first = value;
         }
     }
 
     #[inline]
-    fn ss_is_empty(&self) -> bool {
+    fn strided_is_empty(&self) -> bool {
         (&**self).is_empty()
     }
 
     #[inline]
-    fn ss_len(&self) -> usize {
+    fn strided_len(&self) -> usize {
         (&**self).len()
     }
 }

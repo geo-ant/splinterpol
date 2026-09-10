@@ -8,6 +8,7 @@ use crate::{
         apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
         apply_exponential_filter_in_place_strided, coefficients2d,
     },
+    iter_utils::StridedMut,
     test_utils::read_f64le,
 };
 
@@ -272,7 +273,7 @@ fn exponential_filter_with_non_unit_stride(
         })
         .collect();
 
-    let mut data = orig_strided;
+    let mut data = orig_strided.clone();
     unsafe {
         apply_exponential_filter_in_place_strided(
             alpha,
@@ -284,6 +285,35 @@ fn exponential_filter_with_non_unit_stride(
         )
         .unwrap();
     }
+
+    // now collapse the strided data again so we can compare
+    let data: Vec<_> = data.chunks_exact(STRIDE).map(|chunk| chunk[0]).collect();
+
+    assert_approx_eq!(
+        &[f64],
+        expected.as_slice(),
+        data.as_slice(),
+        // NOTE: we're bit identical to the reference implementation
+        ulps = 0,
+        epsilon = 0.
+    );
+
+    let mut data = orig_strided;
+    apply_exponential_filter_in_place_1d_iter(
+        alpha,
+        StridedMut::new(
+            &mut data,
+            crate::iter_utils::StridedAccessArgs {
+                offset: 0,
+                stride: NonZero::new(STRIDE).unwrap(),
+                count,
+            },
+        )
+        .unwrap(),
+        truncation_index,
+        extension,
+    )
+    .unwrap();
 
     // now collapse the strided data again so we can compare
     let data: Vec<_> = data.chunks_exact(STRIDE).map(|chunk| chunk[0]).collect();

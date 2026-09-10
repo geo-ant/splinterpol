@@ -551,11 +551,11 @@ where
     S: crate::iter_utils::StridedSlice<Item = F>,
 {
     // use crate::iter_utils::StridedSlice;
-    if signal.ss_is_empty() {
+    if signal.strided_is_empty() {
         return Err(Error::NoData);
     }
 
-    if truncation_idx >= signal.ss_len() {
+    if truncation_idx >= signal.strided_len() {
         return Err(Error::NotEnoughData);
     }
 
@@ -571,7 +571,7 @@ where
     // the original signal or one of the filtering steps for the coefficients
     // since those obey the same (transmitted) boundary conditions.
     let s_lini = {
-        let signal_first = signal.ss_first().ok_or(Error::NoData)?;
+        let signal_first = signal.strided_first().ok_or(Error::NoData)?;
         match boundary_extension {
             TransmittableBoundaryExtension::Mirrored => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
@@ -582,7 +582,7 @@ where
                 // results anymore.
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
-                for s in signal.ss_iter().copied().take(truncation_idx) {
+                for s in signal.strided_iter().copied().take(truncation_idx) {
                     pow = pow * alpha;
                     acc = acc + s * pow;
                 }
@@ -591,7 +591,7 @@ where
             TransmittableBoundaryExtension::WholeSymmetric => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
-                for s in signal.ss_iter().copied().skip(1).take(truncation_idx) {
+                for s in signal.strided_iter().copied().skip(1).take(truncation_idx) {
                     pow = pow * alpha;
                     acc = acc + s * pow;
                 }
@@ -600,7 +600,7 @@ where
             TransmittableBoundaryExtension::Periodic => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
-                for s in signal.ss_iter_rev().copied().take(truncation_idx) {
+                for s in signal.strided_iter_rev().copied().take(truncation_idx) {
                     pow = pow * alpha;
                     acc = acc + s * pow;
                 }
@@ -610,7 +610,7 @@ where
     };
 
     // signal[0] = s_lini;
-    signal.ss_write_first(s_lini);
+    signal.strided_write_first(s_lini);
 
     // causal filtering, see algo 3 in the B&M paper lines 2-4
     // NOTE: this is probably a good place to optimize since we have pretty
@@ -668,9 +668,9 @@ where
 
     // this is the same loop as above rewritten with iterators, which
     // makes things not necessarily clearer
-    let last = signal.ss_first().ok_or(Error::NotEnoughData)?;
+    let last = signal.strided_first().ok_or(Error::NotEnoughData)?;
     signal
-        .ss_iter_mut()
+        .strided_iter_mut()
         .skip(1)
         .scan(last, |last, cur| {
             let new = last.fmuladd(alpha, *cur);
@@ -683,12 +683,12 @@ where
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
     // special cases in eqs. (55)-(66)
     let s_lend = {
-        let signal_end = signal.ss_last().ok_or(Error::NoData)?;
+        let signal_end = signal.strided_last().ok_or(Error::NoData)?;
         match boundary_extension {
             TransmittableBoundaryExtension::Periodic => {
                 let mut acc = signal_end;
                 let mut pow = F::ONE;
-                for s in signal.ss_iter().copied().take(truncation_idx) {
+                for s in signal.strided_iter().copied().take(truncation_idx) {
                     pow = pow * alpha;
                     acc = acc + s * pow;
                 }
@@ -696,13 +696,13 @@ where
             }
             TransmittableBoundaryExtension::Mirrored => alpha / (alpha - F::ONE) * signal_end,
             TransmittableBoundaryExtension::WholeSymmetric => {
-                let signal_2nd_to_last = signal.ss_2nd_to_last().ok_or(Error::NotEnoughData)?;
+                let signal_2nd_to_last = signal.strided_2nd_last().ok_or(Error::NotEnoughData)?;
                 alpha / (alpha * alpha - F::ONE) * (signal_end + alpha * signal_2nd_to_last)
             }
         }
     };
 
-    signal.ss_write_last(s_lend);
+    signal.strided_write_last(s_lend);
 
     // NOTE PERF: this is the original loop that I replaced with iterators below.
     // It performs maybe very very slighly better than the iterator based loop,
@@ -721,9 +721,9 @@ where
     //     idx -= 1;
     // }
 
-    let last = signal.ss_last().ok_or(Error::NoData)?;
+    let last = signal.strided_last().ok_or(Error::NoData)?;
     signal
-        .ss_iter_mut_rev()
+        .strided_iter_mut_rev()
         .skip(1)
         .scan(last, |last, cur| {
             let new = alpha * (*last - *cur);
