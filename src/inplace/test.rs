@@ -14,7 +14,8 @@ use crate::{
 
 /// reference results generated with my fork of the Briand&Monasse repository,
 /// see: https://github.com/geo-ant/reference_bspline_interpolation
-/// using the `efip` executable
+/// using the `efip` executable for the 1D data and the `prefilter2d`
+/// executable for the 2d data
 
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
