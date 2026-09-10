@@ -1,3 +1,4 @@
+#![allow(clippy::excessive_precision)]
 use core::marker::PhantomData;
 use num_traits::Float;
 

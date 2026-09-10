@@ -328,7 +328,7 @@ where
 
     #[inline(always)]
     fn strided_2nd_last(&self) -> Option<Self::Item> {
-        self.strided_iter_rev().skip(1).next().copied()
+        self.strided_iter_rev().nth(1).copied()
     }
 
     #[inline(always)]
@@ -362,7 +362,7 @@ where
     }
 }
 
-impl<'a, T> StridedSequence for &'a mut [T]
+impl<T> StridedSequence for &mut [T]
 where
     T: Copy,
 {
