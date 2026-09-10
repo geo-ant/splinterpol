@@ -247,8 +247,8 @@ pub struct ColumnIteratorMut<'a, T> {
 // }
 
 pub struct StridedMut<'a, T> {
+    // start at first element of the column, end at last
     data: &'a mut [T],
-    offset: usize,
     stride: NonZero<usize>,
     count: NonZero<usize>,
 }
@@ -262,16 +262,22 @@ pub struct StridedAccessArgs {
 impl<'a, T> StridedMut<'a, T> {
     #[inline(always)]
     pub fn new(data: &'a mut [T], access: StridedAccessArgs) -> Option<Self> {
-        if data.len() <= access.count.get() * access.stride.get() + access.offset {
-            Some(Self {
-                data,
-                offset: access.offset,
-                stride: access.stride,
-                count: access.count,
-            })
-        } else {
-            None
+        let count = access.count.get();
+        let stride = access.stride.get();
+
+        let last = (count - 1)
+            .checked_mul(stride)?
+            .checked_add(access.offset)?;
+
+        if last >= data.len() {
+            return None;
         }
+
+        Some(Self {
+            data: &mut data[access.offset..=last],
+            stride: access.stride,
+            count: access.count,
+        })
     }
 }
 
@@ -283,52 +289,32 @@ where
 
     #[inline(always)]
     fn ss_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
-        self.data
-            .iter()
-            .skip(self.offset)
-            .step_by(self.stride.get())
-            .take(self.count.get())
+        self.data.iter().step_by(self.stride.get())
     }
+
     #[inline(always)]
     fn ss_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
-        let last = self.offset + (self.count.get() - 1) * self.stride.get();
-        self.data[..=last]
-            .iter()
-            .rev()
-            .step_by(self.stride.get())
-            .take(self.count.get())
+        self.data.iter().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
     fn ss_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
-        self.data
-            .iter_mut()
-            .skip(self.offset)
-            .step_by(self.stride.get())
-            .take(self.count.get())
+        self.data.iter_mut().step_by(self.stride.get())
     }
 
     #[inline(always)]
     fn ss_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
-        let last = self.offset + (self.count.get() - 1) * self.stride.get();
-
-        self.data[..=last]
-            .iter_mut()
-            .rev()
-            .step_by(self.stride.get())
-            .take(self.count.get())
+        self.data.iter_mut().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
     fn ss_first(&self) -> Option<Self::Item> {
-        self.data.get(self.offset).copied()
+        self.data.first().copied()
     }
 
     #[inline(always)]
     fn ss_last(&self) -> Option<Self::Item> {
-        self.data
-            .get(self.offset + self.stride.get() * (self.count.get() - 1))
-            .copied()
+        self.data.last().copied()
     }
 
     #[inline(always)]
@@ -338,7 +324,7 @@ where
         }
 
         self.data
-            .get((self.count.get() - 2) * self.stride.get() + self.offset)
+            .get((self.count.get() - 2) * self.stride.get())
             .copied()
     }
 
@@ -346,7 +332,7 @@ where
     fn ss_write_last(&mut self, value: Self::Item) {
         if let Some(last) = self
             .data
-            .get_mut(self.offset + (self.count.get() - 1) * self.stride.get())
+            .get_mut((self.count.get() - 1) * self.stride.get())
         {
             *last = value;
         }
@@ -354,7 +340,7 @@ where
 
     #[inline(always)]
     fn ss_write_first(&mut self, value: Self::Item) {
-        if let Some(first) = self.data.get_mut(self.offset) {
+        if let Some(first) = self.data.get_mut(0) {
             *first = value;
         }
     }

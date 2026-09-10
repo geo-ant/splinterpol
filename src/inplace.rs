@@ -86,6 +86,7 @@ where
                 truncation_index,
                 boundary_extension,
             )?;
+
             // TODO PERF: with the access checks for at and at_mut disabled
             // this is almost at C reference performance
             // unsafe {
