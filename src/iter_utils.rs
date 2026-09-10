@@ -12,6 +12,7 @@ pub(crate) struct StridedPointerAccess<T> {
     count: NonZero<usize>,
 }
 
+#[cfg_attr(not(test), expect(dead_code))]
 impl<T> StridedPointerAccess<T> {
     pub unsafe fn new(ptr: *mut T, stride: NonZero<usize>, count: NonZero<usize>) -> Option<Self> {
         if ptr.is_null() {
@@ -98,11 +99,13 @@ impl<T> StridedPointerAccess<T> {
     }
 }
 
+#[cfg_attr(not(test), expect(dead_code))]
 pub(crate) struct WriteAccessAt<'a, T> {
     ptr: *mut T,
     phantom: PhantomData<&'a T>,
 }
 
+#[cfg_attr(not(test), expect(dead_code))]
 impl<'a, T> WriteAccessAt<'a, T> {
     #[inline(always)]
     pub fn write(self, val: T) {
@@ -201,20 +204,73 @@ impl<T> ExactSizeIterator for StridedPointerIterMut<'_, T> {
     }
 }
 
-pub struct StridedMut<'a, T> {
-    // start at first element of the column, end at last
+/// abstracts over sequence access in a strided or non-strided slice.
+/// Has some extra methods to get the first, last, and second to last element
+/// because the recursive filter function requires that.
+///
+/// This trait is implemented for regular slices, as well as for the special
+/// `[StridedSliceMut]` type. For strides equal to `1` just use regular slices.
+// NOTE: the `strided_` prefixes are because otherwise it's just annoying
+// because the compiler will get confused with the methods on slice of the
+// same name...
+pub trait StridedSequence {
+    type Item: Copy;
+    /// an iterator over the elements in the sequence
+    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item>;
+    /// a reverse iterator over the elements in the sequence
+    // NOTE: adding the explicit ..._rev implementations turned out I could
+    // make this more efficient than using the ExactSizeDoubleEndedIterator bound on
+    // the normal iter/iter_mut methods. I could do a couple things that helped
+    // the compiler generate better code. I think. Or I chased ghosts in the
+    // benchmarks and assembly but here we are
+    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item>;
+    /// iterator with mut access to the elements in the sequence
+    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item>;
+    /// reverse iterator with mut access to the elements in the sequence
+    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item>;
+    /// get a copy of the first element (if it exists)
+    fn strided_first(&self) -> Option<Self::Item>;
+    /// get copy of the last element (if it exists)
+    fn strided_last(&self) -> Option<Self::Item>;
+    /// and the second to last elements... because the filter needs that
+    /// for one of the initialization passes for one of the boundary conditions
+    fn strided_2nd_last(&self) -> Option<Self::Item>;
+    /// write to the last element. Fails silently if there's no such element
+    /// (at least in release mode)
+    fn strided_write_last(&mut self, value: Self::Item);
+    /// write to the first element. Fails silently if there's no such element
+    /// (at least in release mode)
+    fn strided_write_first(&mut self, value: Self::Item);
+    /// is the sequence empty
+    fn strided_is_empty(&self) -> bool;
+    /// number of elements in the sequence
+    fn strided_len(&self) -> usize;
+}
+
+/// Access a sequence in a slice in strided fashion. Useful for iterating over the
+/// columns of an image that's stored as a contiguous slice in row major
+/// layout.
+pub struct StridedSliceMut<'a, T> {
+    // this actually doesn't contain the full slice but starts at the first
+    // element of the elements we want to access and ends at the last.
+    // The stride indicates the number of elements in between and on construction
+    // we enforce that the layout actually works and this is a multiple of
+    // stride
     data: &'a mut [T],
     stride: NonZero<usize>,
 }
 
+/// just a way of naming the arguments to make the `new` function less
+/// confusing
 pub struct StridedAccessArgs {
     pub offset: usize,
     pub stride: NonZero<usize>,
     pub count: NonZero<usize>,
 }
 
-impl<'a, T> StridedMut<'a, T> {
+impl<'a, T> StridedSliceMut<'a, T> {
     #[inline(always)]
+    /// create a new instance, make sure that the dimensions are okay.
     pub fn new(data: &'a mut [T], access: StridedAccessArgs) -> Option<Self> {
         let count = access.count.get();
         let stride = access.stride.get();
@@ -234,31 +290,29 @@ impl<'a, T> StridedMut<'a, T> {
     }
 }
 
-impl<'a, T> StridedSlice for StridedMut<'a, T>
+impl<'a, T> StridedSequence for StridedSliceMut<'a, T>
 where
     T: Copy,
 {
     type Item = T;
 
     #[inline(always)]
-    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
         self.data.iter().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
+    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
         self.data.iter().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
         self.data.iter_mut().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_mut_rev(
-        &mut self,
-    ) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
+    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
         self.data.iter_mut().rev().step_by(self.stride.get())
     }
 
@@ -279,6 +333,8 @@ where
 
     #[inline(always)]
     fn strided_write_last(&mut self, value: Self::Item) {
+        // NOTE: this works because the last element of the strided elements
+        // is actually the last element that we want to access
         if let Some(last) = self.data.last_mut() {
             *last = value;
         }
@@ -286,6 +342,8 @@ where
 
     #[inline(always)]
     fn strided_write_first(&mut self, value: Self::Item) {
+        // NOTE: same as above, the first element is the actual first
+        // element in the sequence
         if let Some(first) = self.data.get_mut(0) {
             *first = value;
         }
@@ -293,6 +351,8 @@ where
 
     #[inline(always)]
     fn strided_is_empty(&self) -> bool {
+        // this is actually always false because we enforce nonzero count,
+        // but that's alright.
         self.data.is_empty()
     }
 
@@ -302,58 +362,40 @@ where
     }
 }
 
-pub trait StridedSlice {
-    type Item: Copy;
-    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
-    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator;
-    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
-    fn strided_iter_mut_rev(&mut self)
-    -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator;
-    fn strided_first(&self) -> Option<Self::Item>;
-    fn strided_last(&self) -> Option<Self::Item>;
-    fn strided_2nd_last(&self) -> Option<Self::Item>;
-    fn strided_write_last(&mut self, value: Self::Item);
-    fn strided_write_first(&mut self, value: Self::Item);
-    fn strided_is_empty(&self) -> bool;
-    fn strided_len(&self) -> usize;
-}
-
-impl<'a, T> StridedSlice for &'a mut [T]
+impl<'a, T> StridedSequence for &'a mut [T]
 where
     T: Copy,
 {
     type Item = T;
 
     #[inline]
-    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
-        (&**self).iter()
+    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+        self.iter()
     }
 
     #[inline]
-    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> + ExactSizeIterator {
-        (&**self).iter().rev()
+    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+        self.iter().rev()
     }
 
     #[inline]
-    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
-        (&mut **self).iter_mut()
+    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+        self.iter_mut()
     }
 
     #[inline]
-    fn strided_iter_mut_rev(
-        &mut self,
-    ) -> impl Iterator<Item = &mut Self::Item> + ExactSizeIterator {
-        (&mut **self).iter_mut().rev()
+    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+        self.iter_mut().rev()
     }
 
     #[inline]
     fn strided_first(&self) -> Option<Self::Item> {
-        (&**self).first().copied()
+        self.first().copied()
     }
 
     #[inline]
     fn strided_last(&self) -> Option<Self::Item> {
-        (&**self).last().copied()
+        self.last().copied()
     }
 
     #[inline]
@@ -378,11 +420,11 @@ where
 
     #[inline]
     fn strided_is_empty(&self) -> bool {
-        (&**self).is_empty()
+        self.is_empty()
     }
 
     #[inline]
     fn strided_len(&self) -> usize {
-        (&**self).len()
+        self.len()
     }
 }

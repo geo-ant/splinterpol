@@ -8,7 +8,7 @@ use crate::{
         apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
         apply_exponential_filter_in_place_strided, coefficients2d,
     },
-    iter_utils::StridedMut,
+    iter_utils::StridedSliceMut,
     test_utils::read_f64le,
 };
 
@@ -301,7 +301,7 @@ fn exponential_filter_with_non_unit_stride(
     let mut data = orig_strided;
     apply_exponential_filter_in_place_1d_iter(
         alpha,
-        StridedMut::new(
+        StridedSliceMut::new(
             &mut data,
             crate::iter_utils::StridedAccessArgs {
                 offset: 0,

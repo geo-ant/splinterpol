@@ -8,7 +8,7 @@ use crate::{
     bspline::{BSpline, BSpline3},
     fma::FusedMuladd,
     internal::compute_truncation_indices,
-    iter_utils::{StridedMut, StridedPointerAccess},
+    iter_utils::{StridedPointerAccess, StridedSliceMut},
 };
 
 #[cfg(test)]
@@ -71,7 +71,7 @@ where
         .zip(truncation_indices.iter().copied())
     {
         for col in 0..width.get() {
-            let col = StridedMut::new(
+            let col = StridedSliceMut::new(
                 image_data,
                 crate::iter_utils::StridedAccessArgs {
                     offset: col,
@@ -148,6 +148,7 @@ where
 // #[expect(dead_code)]
 #[allow(unsafe_code)]
 // #[cfg_attr(not(test), expect(dead_code))]
+#[cfg_attr(not(test), expect(dead_code))]
 pub(crate) unsafe fn apply_exponential_filter_in_place_strided<F>(
     // the pole, -1 < alpha < 0
     alpha: F,
@@ -548,7 +549,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d_iter<S, F>(
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    S: crate::iter_utils::StridedSlice<Item = F>,
+    S: crate::iter_utils::StridedSequence<Item = F>,
 {
     // use crate::iter_utils::StridedSlice;
     if signal.strided_is_empty() {
