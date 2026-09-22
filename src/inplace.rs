@@ -114,7 +114,7 @@ where
             .try_for_each(|row| {
                 // NOTE PERF: interestingly, this performs better than the
                 // slice based method in 2d benchmarks...
-                apply_exponential_filter_in_place_1d_iter(
+                apply_exponential_filter_in_place_1d(
                     pole,
                     row,
                     truncation_index,
@@ -443,6 +443,8 @@ where
     // NOTE PERF: this loop might perform very very slighly faster
     // than the iterator based implementation but not enough for me to abandon
     // the iterators
+
+    // // --- original loop ---
     // let mut last = signal[0];
     // let mut idx = 1;
     // let end_idx = signal.len() - 1;
@@ -462,20 +464,53 @@ where
     //     idx += 1;
     // }
 
-    // this is the same loop as above rewritten with iterators, which
-    // makes things not necessarily clearer
+    // --- level-2 algebraic unrolling ---
+    let mut last = signal[0];
+    let mut idx = 2;
     let end_idx = signal.len() - 1;
-    let last = signal[0];
-    signal
-        .iter_mut()
-        .skip(1)
-        .scan(last, |last, cur| {
-            let new = last.fmuladd(alpha, *cur);
-            *cur = new;
-            *last = *cur;
-            Some(())
-        })
-        .for_each(drop);
+    if end_idx >= signal.len() {
+        return Err(Error::OutOfBounds);
+    }
+    let alpha_sq = alpha * alpha;
+
+    loop {
+        if idx > end_idx {
+            break;
+        }
+        let x0 = signal[idx];
+        let x1 = signal[idx - 1];
+        // y[idx-1] = x[idx-1] + alpha*y[idx-2];
+        //          = x1 + alpha * last
+        let y1 = last.fmuladd(alpha, x1);
+        // y[idx] = x[idx] + alpha*y[idx-1] = x[idx] + alpha*x[idx-1] + alpha^2 * y[idx-2]
+        //        = x0 + alpha*x1 + alpha^2 * last
+        let y0 = last.fmuladd(alpha_sq, x1.fmuladd(alpha, x0));
+        last = y0;
+        signal[idx] = y0;
+        signal[idx - 1] = y1;
+        idx += 2;
+    }
+    // tail must be processed as well when unrolling! The last up to step-1 elements
+    // must be processed, which for step 2 is at most 1 element
+    if idx - 1 == end_idx {
+        signal[end_idx] = signal[end_idx] + alpha * signal[end_idx - 1];
+    }
+
+    // // Iterator version
+    // // this is the same loop as above rewritten with iterators, which
+    // // makes things not necessarily clearer
+    // let end_idx = signal.len() - 1;
+    // let last = signal[0];
+    // signal
+    //     .iter_mut()
+    //     .skip(1)
+    //     .scan(last, |last, cur| {
+    //         let new = last.fmuladd(alpha, *cur);
+    //         *cur = new;
+    //         *last = *cur;
+    //         Some(())
+    //     })
+    //     .for_each(drop);
 
     // line 5 in B&M algorithm 3, but we're not using eq (49) directly but the
     // special cases in eqs. (55)-(66)
@@ -507,9 +542,10 @@ where
     // NOTE PERF: this is the original loop that I replaced with iterators below.
     // It performs maybe very very slighly better than the iterator based loop,
     // but not enough for me to abandon the iterator loop.
+
+    // // --- original loop ---
     // let mut idx = end_idx - 1;
     // let mut last = signal[end_idx];
-
     // loop {
     //     let cur = signal[idx];
     //     let new = alpha * (last - cur);
@@ -521,18 +557,55 @@ where
     //     idx -= 1;
     // }
 
-    let last = signal[end_idx];
-    signal
-        .iter_mut()
-        .rev()
-        .skip(1)
-        .scan(last, |last, cur| {
-            let new = alpha * (*last - *cur);
-            *cur = new;
-            *last = *cur;
-            Some(())
-        })
-        .for_each(drop);
+    // TODO TAIL HANDLING
+    // --- algebraically unrolled ---
+    const STEP: usize = 2;
+    let mut idx;
+    let neg_alpha = -alpha;
+    let neg_alpha_sq = -alpha * alpha;
+    if end_idx > STEP {
+        idx = end_idx - STEP;
+        let mut last = signal[end_idx];
+        loop {
+            let x0 = signal[idx];
+            let x1 = signal[idx + 1];
+            let y1 = alpha * (last - x1);
+            // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
+            // let y1 = last.fmuladd(alpha, neg_alpha * x1);
+            // let y0 = alpha * (y1 - x0);
+            let y0 = alpha_sq * last - alpha_sq * x1 - alpha * x0;
+            // let y0 = alpha_sq * (last - x1) - alpha * x0;
+            // let y0 = alpha * (alpha * (last - x1) - x0);
+            // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
+            // let y0 = x0.fmuladd(neg_alpha, last.fmuladd(alpha_sq, neg_alpha_sq * x1));
+            signal[idx + 1] = y1;
+            signal[idx] = y0;
+            last = y0;
+            if idx < STEP {
+                break;
+            }
+            idx -= STEP;
+        }
+    } else {
+        idx = end_idx - 1;
+    }
+    if idx != 0 {
+        signal[0] = alpha * (signal[1] - signal[0]);
+    }
+
+    // // --- iterator based loop ---
+    // let last = signal[end_idx];
+    // signal
+    //     .iter_mut()
+    //     .rev()
+    //     .skip(1)
+    //     .scan(last, |last, cur| {
+    //         let new = alpha * (*last - *cur);
+    //         *cur = new;
+    //         *last = *cur;
+    //         Some(())
+    //     })
+    //     .for_each(drop);
 
     Ok(())
 }
