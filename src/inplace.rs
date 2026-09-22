@@ -561,8 +561,6 @@ where
     // --- algebraically unrolled ---
     const STEP: usize = 2;
     let mut idx;
-    let neg_alpha = -alpha;
-    let neg_alpha_sq = -alpha * alpha;
     if end_idx > STEP {
         idx = end_idx - STEP;
         let mut last = signal[end_idx];
@@ -622,7 +620,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d_iter<S, F>(
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    S: crate::iter_utils::StridedSequence<Item = F>,
+    S: crate::iter_utils::StridedRandomAccess<Item = F>,
 {
     // use crate::iter_utils::StridedSlice;
     if signal.strided_is_empty() {

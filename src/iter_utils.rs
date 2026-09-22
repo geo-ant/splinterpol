@@ -213,21 +213,7 @@ impl<T> ExactSizeIterator for StridedPointerIterMut<'_, T> {
 // NOTE: the `strided_` prefixes are because otherwise it's just annoying
 // because the compiler will get confused with the methods on slice of the
 // same name...
-pub trait StridedSequence {
-    type Item: Copy;
-    /// an iterator over the elements in the sequence
-    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item>;
-    /// a reverse iterator over the elements in the sequence
-    // NOTE: adding the explicit ..._rev implementations turned out I could
-    // make this more efficient than using the ExactSizeDoubleEndedIterator bound on
-    // the normal iter/iter_mut methods. I could do a couple things that helped
-    // the compiler generate better code. I think. Or I chased ghosts in the
-    // benchmarks and assembly but here we are
-    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item>;
-    /// iterator with mut access to the elements in the sequence
-    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item>;
-    /// reverse iterator with mut access to the elements in the sequence
-    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item>;
+pub trait StridedRandomAccess: StridedIter {
     /// get a copy of the first element (if it exists)
     fn strided_first(&self) -> Option<Self::Item>;
     /// get copy of the last element (if it exists)
@@ -241,6 +227,24 @@ pub trait StridedSequence {
     /// write to the first element. Fails silently if there's no such element
     /// (at least in release mode)
     fn strided_write_first(&mut self, value: Self::Item);
+}
+
+// TODO: document
+pub trait StridedIter {
+    type Item: Copy;
+    /// an iterator over the elements in the sequence
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item>;
+    /// a reverse iterator over the elements in the sequence
+    // NOTE: adding the explicit ..._rev implementations turned out I could
+    // make this more efficient than using the ExactSizeDoubleEndedIterator bound on
+    // the normal iter/iter_mut methods. I could do a couple things that helped
+    // the compiler generate better code. I think. Or I chased ghosts in the
+    // benchmarks and assembly but here we are
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item>;
+    /// iterator with mut access to the elements in the sequence
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item>;
+    /// reverse iterator with mut access to the elements in the sequence
+    fn strided_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item>;
     /// is the sequence empty
     fn strided_is_empty(&self) -> bool;
     /// number of elements in the sequence
@@ -290,7 +294,7 @@ impl<'a, T> StridedSliceMut<'a, T> {
     }
 }
 
-impl<'a, T> StridedSequence for StridedSliceMut<'a, T>
+impl<'a, T> StridedIter for StridedSliceMut<'a, T>
 where
     T: Copy,
 {
@@ -316,6 +320,23 @@ where
         self.data.iter_mut().rev().step_by(self.stride.get())
     }
 
+    #[inline(always)]
+    fn strided_is_empty(&self) -> bool {
+        // this is actually always false because we enforce nonzero count,
+        // but that's alright.
+        self.data.is_empty()
+    }
+
+    #[inline(always)]
+    fn strided_len(&self) -> usize {
+        self.data.len() / self.stride.get()
+    }
+}
+
+impl<'a, T> StridedRandomAccess for StridedSliceMut<'a, T>
+where
+    T: Copy,
+{
     #[inline(always)]
     fn strided_first(&self) -> Option<Self::Item> {
         self.data.first().copied()
@@ -348,21 +369,9 @@ where
             *first = value;
         }
     }
-
-    #[inline(always)]
-    fn strided_is_empty(&self) -> bool {
-        // this is actually always false because we enforce nonzero count,
-        // but that's alright.
-        self.data.is_empty()
-    }
-
-    #[inline(always)]
-    fn strided_len(&self) -> usize {
-        self.data.len() / self.stride.get()
-    }
 }
 
-impl<T> StridedSequence for &mut [T]
+impl<T> StridedIter for &mut [T]
 where
     T: Copy,
 {
@@ -388,6 +397,21 @@ where
         self.iter_mut().rev()
     }
 
+    #[inline]
+    fn strided_len(&self) -> usize {
+        self.len()
+    }
+
+    #[inline]
+    fn strided_is_empty(&self) -> bool {
+        self.is_empty()
+    }
+}
+
+impl<T> StridedRandomAccess for &mut [T]
+where
+    T: Copy,
+{
     #[inline]
     fn strided_first(&self) -> Option<Self::Item> {
         self.first().copied()
@@ -417,14 +441,91 @@ where
             *first = value;
         }
     }
+}
 
-    #[inline]
-    fn strided_is_empty(&self) -> bool {
-        self.is_empty()
+// TODO:doc
+pub struct BlockedStridedSliceMut<'a, const BLOCKSIZE: usize, T> {
+    // this actually doesn't contain the full slice but starts at the first
+    // element of the elements we want to access and ends at the last.
+    // The stride indicates the number of elements in between and on construction
+    // we enforce that the layout actually works and this is a multiple of
+    // stride
+    data: &'a mut [T],
+    stride: NonZero<usize>,
+}
+
+impl<'a, const BLOCKSIZE: usize, T> BlockedStridedSliceMut<'a, BLOCKSIZE, T> {
+    #[inline(always)]
+    /// create a new instance, make sure that the dimensions are okay.
+    pub fn new(data: &'a mut [T], access: StridedAccessArgs) -> Option<Self> {
+        let count = access.count.get();
+        let stride = access.stride.get();
+
+        let last = (count - 1)
+            .checked_mul(stride)?
+            .checked_add(access.offset)?;
+
+        if stride < BLOCKSIZE {
+            return None;
+        }
+
+        if last + BLOCKSIZE >= data.len() {
+            return None;
+        }
+
+        Some(Self {
+            data: &mut data[access.offset..=last],
+            stride: access.stride,
+        })
+    }
+}
+
+impl<'a, const BLOCKSIZE: usize, T> StridedIter for BlockedStridedSliceMut<'a, BLOCKSIZE, T>
+where
+    T: Copy,
+{
+    type Item = [T; BLOCKSIZE];
+
+    #[inline(always)]
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> {
+        // NOTE: the trick is to chunk the data according to the stride and
+        // then extract the blocks from those stride-sized chunks. This
+        // will give use the multi-columns
+        self.data
+            .chunks_exact(self.stride.get())
+            .flat_map(move |block| block.first_chunk::<BLOCKSIZE>())
     }
 
-    #[inline]
+    #[inline(always)]
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> {
+        self.data
+            .chunks_exact(self.stride.get())
+            .rev()
+            .flat_map(move |block| block.first_chunk::<BLOCKSIZE>())
+    }
+
+    #[inline(always)]
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> {
+        self.data
+            .chunks_exact_mut(self.stride.get())
+            .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
+    }
+
+    #[inline(always)]
+    fn strided_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> {
+        self.data
+            .chunks_exact_mut(self.stride.get())
+            .rev()
+            .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
+    }
+
+    #[inline(always)]
+    fn strided_is_empty(&self) -> bool {
+        self.data.is_empty()
+    }
+
+    #[inline(always)]
     fn strided_len(&self) -> usize {
-        self.len()
+        self.data.len() / self.stride.get()
     }
 }
