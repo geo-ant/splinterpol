@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-pub trait FloatVector {
+pub trait FloatVector: Copy {
     type Scalar: num_traits::Float + num_traits::ConstOne + num_traits::ConstZero;
 
     /// BLAS inspired syntax a*x+y where x = self,y = addend are vectors and
