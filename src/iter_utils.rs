@@ -458,23 +458,47 @@ impl<'a, const BLOCKSIZE: usize, T> BlockedStridedSliceMut<'a, BLOCKSIZE, T> {
     #[inline(always)]
     /// create a new instance, make sure that the dimensions are okay.
     pub fn new(data: &'a mut [T], access: StridedAccessArgs) -> Option<Self> {
+        const {
+            assert!(BLOCKSIZE > 0);
+        }
         let count = access.count.get();
         let stride = access.stride.get();
 
-        let last = (count - 1)
-            .checked_mul(stride)?
-            .checked_add(access.offset)?;
+        // NOTE(geo): we're using a trick here to make returning blocks
+        // work well with iterators. For that, we're dividing the
+        // strided slice into chunks of size `stride` (not block-size)
+        // and then returning the first block-size elements from the chunk.
+        //
+        // Example:
+        // say offset = 1
+        // stride = 4
+        // blocksize = 2
+        // count = 3
+        //
+        // |0 |1 |2 |3 |4 |5 |6 |7 |8 |9 |10|11|12|13|14|15...
+        //    |           |           |           |  <-- stride
+        //    |block|     |block|     |block|        <-- blocks
+        //                                         ^
+        //                                         | end = offset+count*stride
+        //                                           (past the end element)
+        //    |-----------------------------------|
+        //     this is what we slice to do iteration
+        //
+        // note htis requires that the block size is <= stride,
+        // which makes sense since stride is the number of columns
+        // (=length of a row) in a row major storage format.
+        let past_the_end = count.checked_mul(stride)?.checked_add(access.offset)?;
 
         if stride < BLOCKSIZE {
             return None;
         }
 
-        if last + BLOCKSIZE >= data.len() {
+        if past_the_end > data.len() {
             return None;
         }
 
         Some(Self {
-            data: &mut data[access.offset..=last],
+            data: &mut data[access.offset..past_the_end],
             stride: access.stride,
         })
     }
@@ -493,7 +517,8 @@ where
         // will give use the multi-columns
         self.data
             .chunks_exact(self.stride.get())
-            .flat_map(move |block| block.first_chunk::<BLOCKSIZE>())
+            // TODO: check if that code really works without a panic check
+            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
     }
 
     #[inline(always)]
@@ -501,14 +526,16 @@ where
         self.data
             .chunks_exact(self.stride.get())
             .rev()
-            .flat_map(move |block| block.first_chunk::<BLOCKSIZE>())
+            // TODO:check whether unwrap is optimized out
+            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
     }
 
     #[inline(always)]
     fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.data
             .chunks_exact_mut(self.stride.get())
-            .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
+            // TODO:check whether unwrap is optimized out
+            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
     }
 
     #[inline(always)]
@@ -516,7 +543,9 @@ where
         self.data
             .chunks_exact_mut(self.stride.get())
             .rev()
-            .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
+            // TODO check whether unwrap is optimized out, otherwise use unwrap unchecked
+            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
+        // .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
     }
 
     #[inline(always)]
@@ -527,5 +556,47 @@ where
     #[inline(always)]
     fn strided_len(&self) -> usize {
         self.data.len() / self.stride.get()
+    }
+}
+
+impl<'a, const BLOCKSIZE: usize, T> StridedRandomAccess for BlockedStridedSliceMut<'a, BLOCKSIZE, T>
+where
+    T: Copy,
+{
+    fn strided_first(&self) -> Option<Self::Item> {
+        self.data.first_chunk().copied()
+    }
+
+    fn strided_last(&self) -> Option<Self::Item> {
+        self.data
+            .rchunks_exact(self.stride.get())
+            .next()?
+            .first_chunk()
+            .copied()
+    }
+
+    fn strided_2nd_last(&self) -> Option<Self::Item> {
+        self.data
+            .rchunks_exact(self.stride.get())
+            .nth(1)?
+            .first_chunk()
+            .copied()
+    }
+
+    fn strided_write_last(&mut self, value: Self::Item) {
+        if let Some(last) = self
+            .data
+            .rchunks_exact_mut(self.stride.get())
+            .next()
+            .and_then(|slice| slice.first_chunk_mut::<BLOCKSIZE>())
+        {
+            *last = value
+        }
+    }
+
+    fn strided_write_first(&mut self, value: Self::Item) {
+        if let Some(first) = self.data.first_chunk_mut::<BLOCKSIZE>() {
+            *first = value
+        }
     }
 }
