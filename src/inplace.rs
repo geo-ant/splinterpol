@@ -8,7 +8,7 @@ use crate::{
     bspline::{BSpline, BSpline3},
     fma::{FloatVector, FusedMuladd},
     internal::compute_truncation_indices,
-    iter_utils::{StridedPointerAccess, StridedSliceMut},
+    iter_utils::{BlockedStridedSliceMut, StridedPointerAccess, StridedSliceMut},
 };
 
 #[cfg(test)]
@@ -37,6 +37,10 @@ pub fn coefficients2d<B, const NPOLES: usize>(
 where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSpline<NPOLES>,
+    // TODO: add a blocksize argument which will require a more ergonomic
+    // builder than this actual function, but should be fine
+    [B::Float; 4]: FloatVector<Scalar = B::Float>,
+    [B::Float; 8]: FloatVector<Scalar = B::Float>,
 {
     let expected_len = match width.overflowing_mul(height) {
         (val, false) => val,
@@ -65,12 +69,49 @@ where
     // with manual indexing right away anyways, so let's see if we can get this
     // working and see how well it performs compared to the reference C impl
 
+    const BLOCKSIZE: usize = 8;
     for (pole, truncation_index) in B::POLES
         .iter()
         .copied()
         .zip(truncation_indices.iter().copied())
     {
-        for col in 0..width.get() {
+        let mut idx = 0;
+        for col in (0..width.get()).step_by(BLOCKSIZE) {
+            // let col = StridedSliceMut::new(
+            //     image_data,
+            //     crate::iter_utils::StridedAccessArgs {
+            //         offset: col,
+            //         stride: width,
+            //         count: height,
+            //     },
+            // )
+            // .ok_or(Error::Dimensions)?;
+            // apply_exponential_filter_in_place_1d_iter(
+            //     pole,
+            //     col,
+            //     truncation_index,
+            //     boundary_extension,
+            // )?;
+            let Some(col) = BlockedStridedSliceMut::<BLOCKSIZE, B::Float>::new(
+                image_data,
+                crate::iter_utils::StridedAccessArgs {
+                    offset: col,
+                    stride: width,
+                    count: height,
+                },
+            ) else {
+                break;
+            };
+            // .ok_or(Error::Dimensions)?;
+            apply_exponential_filter_in_place_1d_iter_vector(
+                pole,
+                col,
+                truncation_index,
+                boundary_extension,
+            )?;
+            idx += BLOCKSIZE;
+        }
+        for col in idx..width.get() {
             let col = StridedSliceMut::new(
                 image_data,
                 crate::iter_utils::StridedAccessArgs {

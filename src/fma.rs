@@ -87,6 +87,56 @@ impl FloatVector for f32 {
     }
 }
 
+impl<const N: usize> FloatVector for [f32; N] {
+    type Scalar = f32;
+
+    fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
+        for j in 0..N {
+            self[j] = factor * self[j] + addend[j];
+        }
+        self
+    }
+
+    fn scal(mut self, factor: Self::Scalar) -> Self {
+        for j in 0..N {
+            self[j] *= factor;
+        }
+        self
+    }
+
+    fn sub(mut self, subtrahend: Self) -> Self {
+        for j in 0..N {
+            self[j] -= subtrahend[j];
+        }
+        self
+    }
+}
+
+impl<const N: usize> FloatVector for [f64; N] {
+    type Scalar = f64;
+
+    fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
+        for j in 0..N {
+            self[j] = factor * self[j] + addend[j];
+        }
+        self
+    }
+
+    fn scal(mut self, factor: Self::Scalar) -> Self {
+        for j in 0..N {
+            self[j] *= factor;
+        }
+        self
+    }
+
+    fn sub(mut self, subtrahend: Self) -> Self {
+        for j in 0..N {
+            self[j] -= subtrahend[j];
+        }
+        self
+    }
+}
+
 /// Trait exposing a fused mul-add or a fallback if the instruction doesn't exist
 /// This idea is taken from the `interpN` crate.
 pub trait FusedMuladd {
