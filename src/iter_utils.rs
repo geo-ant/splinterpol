@@ -301,22 +301,22 @@ where
     type Item = T;
 
     #[inline(always)]
-    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> {
         self.data.iter().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> {
         self.data.iter().rev().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.data.iter_mut().step_by(self.stride.get())
     }
 
     #[inline(always)]
-    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+    fn strided_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.data.iter_mut().rev().step_by(self.stride.get())
     }
 
@@ -378,22 +378,22 @@ where
     type Item = T;
 
     #[inline]
-    fn strided_iter(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+    fn strided_iter(&self) -> impl Iterator<Item = &Self::Item> {
         self.iter()
     }
 
     #[inline]
-    fn strided_iter_rev(&self) -> impl ExactSizeIterator<Item = &Self::Item> {
+    fn strided_iter_rev(&self) -> impl Iterator<Item = &Self::Item> {
         self.iter().rev()
     }
 
     #[inline]
-    fn strided_iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+    fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.iter_mut()
     }
 
     #[inline]
-    fn strided_iter_mut_rev(&mut self) -> impl ExactSizeIterator<Item = &mut Self::Item> {
+    fn strided_iter_mut_rev(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.iter_mut().rev()
     }
 
