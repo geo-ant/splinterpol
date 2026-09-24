@@ -504,6 +504,10 @@ impl<'a, const BLOCKSIZE: usize, T> BlockedStridedSliceMut<'a, BLOCKSIZE, T> {
     }
 }
 
+// NOTE(geo): I've verified that the generated assembly in the exponential
+// filter function doesn't contain panic checks. Everything is inlined as
+// it should be.
+#[allow(clippy::unwrap_used)]
 impl<'a, const BLOCKSIZE: usize, T> StridedIter for BlockedStridedSliceMut<'a, BLOCKSIZE, T>
 where
     T: Copy,
@@ -519,7 +523,7 @@ where
             .chunks_exact(self.stride.get())
             // NOTE: this works without panic checks in the tight loop of
             // the exponential filter but it's ugly due to the unwrap
-            .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
+            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
         // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
 
@@ -529,7 +533,7 @@ where
             .chunks_exact(self.stride.get())
             .rev()
             // TODO:check whether unwrap is optimized out
-            .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
+            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
         // // NOTE this doesn't get optimized to the same assembly
         // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
@@ -539,7 +543,7 @@ where
         self.data
             .chunks_exact_mut(self.stride.get())
             // TODO:check whether unwrap is optimized out
-            .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
+            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
         // // NOTE this doesn't get optimized to the same assembly
         // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
@@ -550,7 +554,7 @@ where
             .chunks_exact_mut(self.stride.get())
             .rev()
             // TODO check whether unwrap is optimized out, otherwise use unwrap unchecked
-            .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
+            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
         // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
 
