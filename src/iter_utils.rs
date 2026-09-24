@@ -517,8 +517,10 @@ where
         // will give use the multi-columns
         self.data
             .chunks_exact(self.stride.get())
-            // TODO: check if that code really works without a panic check
+            // NOTE: this works without panic checks in the tight loop of
+            // the exponential filter but it's ugly due to the unwrap
             .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
+        // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
@@ -528,6 +530,8 @@ where
             .rev()
             // TODO:check whether unwrap is optimized out
             .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
+        // // NOTE this doesn't get optimized to the same assembly
+        // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
@@ -536,6 +540,8 @@ where
             .chunks_exact_mut(self.stride.get())
             // TODO:check whether unwrap is optimized out
             .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
+        // // NOTE this doesn't get optimized to the same assembly
+        // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
@@ -545,7 +551,7 @@ where
             .rev()
             // TODO check whether unwrap is optimized out, otherwise use unwrap unchecked
             .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
-        // .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
+        // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
