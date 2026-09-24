@@ -76,22 +76,124 @@ where
         .zip(truncation_indices.iter().copied())
     {
         let mut idx = 0;
+        // for col in (0..width.get()).step_by(BLOCKSIZE) {
+        //     let Some(col) = BlockedStridedSliceMut::<BLOCKSIZE, B::Float>::new(
+        //         image_data,
+        //         crate::iter_utils::StridedAccessArgs {
+        //             offset: col,
+        //             stride: width,
+        //             count: height,
+        //         },
+        //     ) else {
+        //         break;
+        //     };
+        //     // .ok_or(Error::Dimensions)?;
+        //     apply_exponential_filter_in_place_1d_iter_vector(
+        //         pole,
+        //         col,
+        //         truncation_index,
+        //         boundary_extension,
+        //     )?;
+        //     idx += BLOCKSIZE;
+        // }
+        for col in idx..width.get() {
+            let col = StridedSliceMut::new(
+                image_data,
+                crate::iter_utils::StridedAccessArgs {
+                    offset: col,
+                    stride: width,
+                    count: height,
+                },
+            )
+            .ok_or(Error::Dimensions)?;
+            apply_exponential_filter_in_place_1d_iter(
+                pole,
+                col,
+                truncation_index,
+                boundary_extension,
+            )?;
+        }
+    }
+
+    // row filtering
+    for (pole, truncation_index) in B::POLES
+        .iter()
+        .copied()
+        .zip(truncation_indices.iter().copied())
+    {
+        image_data
+            .chunks_exact_mut(width.get())
+            .try_for_each(|row| {
+                // NOTE PERF: interestingly, this performs better than the
+                // slice based method in 2d benchmarks...
+                apply_exponential_filter_in_place_1d(
+                    pole,
+                    row,
+                    truncation_index,
+                    boundary_extension,
+                )
+            })?;
+    }
+
+    if B::NORMALIZATION != B::Float::ONE {
+        let normalization = B::NORMALIZATION.powi(2);
+        image_data
+            .iter_mut()
+            .for_each(|val| *val = *val * normalization);
+    }
+    Ok(())
+    // Normalization
+}
+
+pub fn coefficients2d_blocked<B, const NPOLES: usize, const BLOCKSIZE: usize>(
+    _bspline: B,
+    image_data: &mut [B::Float],
+    width: usize,
+    height: usize,
+    epsilon: B::Float,
+    boundary_extension: TransmittableBoundaryExtension,
+) -> Result<(), Error>
+where
+    B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
+    B: BSpline<NPOLES>,
+    // TODO: add a blocksize argument which will require a more ergonomic
+    // builder than this actual function, but should be fine
+    [B::Float; BLOCKSIZE]: FloatVector<Scalar = B::Float>,
+{
+    let expected_len = match width.overflowing_mul(height) {
+        (val, false) => val,
+        (_, true) => return Err(Error::Overflow),
+    };
+
+    if image_data.len() != expected_len {
+        return Err(Error::Dimensions);
+    }
+
+    let width = NonZero::new(width).ok_or(Error::NoData)?;
+    let height = NonZero::new(height).ok_or(Error::NoData)?;
+
+    // NOTE: this is almost certainly not the most efficient way of doing things,
+    // since the columns have massive stride typically,so a blocking strategy
+    // is the way to go here in general
+
+    let truncation_indices = compute_truncation_indices(&B::POLES, epsilon)?;
+
+    // column filtering
+    // TODO: remove this horrible unsafe code. We should not have to do any of this
+    // for 2D sequential row-by row iteration. We can write an abstraction that
+    // safely returns column iterators for a row major mutable view of an array...
+    // but for parallel iterators we have to use unsafe code. But maybe I
+    // don't have to do any iterator stuff and I can use a blocking strategy
+    // with manual indexing right away anyways, so let's see if we can get this
+    // working and see how well it performs compared to the reference C impl
+
+    for (pole, truncation_index) in B::POLES
+        .iter()
+        .copied()
+        .zip(truncation_indices.iter().copied())
+    {
+        let mut idx = 0;
         for col in (0..width.get()).step_by(BLOCKSIZE) {
-            // let col = StridedSliceMut::new(
-            //     image_data,
-            //     crate::iter_utils::StridedAccessArgs {
-            //         offset: col,
-            //         stride: width,
-            //         count: height,
-            //     },
-            // )
-            // .ok_or(Error::Dimensions)?;
-            // apply_exponential_filter_in_place_1d_iter(
-            //     pole,
-            //     col,
-            //     truncation_index,
-            //     boundary_extension,
-            // )?;
             let Some(col) = BlockedStridedSliceMut::<BLOCKSIZE, B::Float>::new(
                 image_data,
                 crate::iter_utils::StridedAccessArgs {

@@ -92,7 +92,8 @@ impl<const N: usize> FloatVector for [f32; N] {
 
     fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
         for j in 0..N {
-            self[j] = factor * self[j] + addend[j];
+            // self[j] = factor * self[j] + addend[j];
+            self[j] = self[j].axpy(factor, addend[j]);
         }
         self
     }
@@ -117,7 +118,8 @@ impl<const N: usize> FloatVector for [f64; N] {
 
     fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
         for j in 0..N {
-            self[j] = factor * self[j] + addend[j];
+            // self[j] = factor * self[j] + addend[j];
+            self[j] = self[j].axpy(factor, addend[j]);
         }
         self
     }

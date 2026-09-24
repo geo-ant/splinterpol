@@ -72,10 +72,12 @@ pub mod reexports {
 }
 
 #[inline(never)]
-pub fn expf64(
+#[allow(clippy::unwrap_used)]
+pub fn blocked_expf64_strided_iter(
     // the pole, -1 < alpha < 0
     alpha: f64,
     signal: &mut [f64],
+    stride: NonZero<usize>,
     //NOTE: in theory, this N can be larger than the amount of elements
     // but we're restricting it here
     // TODO: if we want to allow this to be larger, we would have to have
@@ -89,10 +91,19 @@ pub fn expf64(
     truncation_idx: usize,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error> {
-    // inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
-    inplace::apply_exponential_filter_in_place_1d_iter(
-        alpha,
+    let col = iter_utils::BlockedStridedSliceMut::<8, f64>::new(
         signal,
+        crate::iter_utils::StridedAccessArgs {
+            offset: 0,
+            stride,
+            count: NonZero::new(signal.len() / stride.get()).unwrap(),
+        },
+    )
+    .ok_or(Error::Dimensions)?;
+    // inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
+    inplace::apply_exponential_filter_in_place_1d_iter_vector(
+        alpha,
+        col,
         truncation_idx,
         boundary_extension,
     )

@@ -518,7 +518,7 @@ where
         self.data
             .chunks_exact(self.stride.get())
             // TODO: check if that code really works without a panic check
-            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
+            .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
     }
 
     #[inline(always)]
@@ -527,7 +527,7 @@ where
             .chunks_exact(self.stride.get())
             .rev()
             // TODO:check whether unwrap is optimized out
-            .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
+            .map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>().unwrap() })
     }
 
     #[inline(always)]
@@ -535,7 +535,7 @@ where
         self.data
             .chunks_exact_mut(self.stride.get())
             // TODO:check whether unwrap is optimized out
-            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
+            .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
     }
 
     #[inline(always)]
@@ -544,7 +544,7 @@ where
             .chunks_exact_mut(self.stride.get())
             .rev()
             // TODO check whether unwrap is optimized out, otherwise use unwrap unchecked
-            .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
+            .map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>().unwrap() })
         // .flat_map(move |block| block.first_chunk_mut::<BLOCKSIZE>())
     }
 
