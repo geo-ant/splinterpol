@@ -32,7 +32,7 @@ pub mod bench_exports;
 #[cfg(test)]
 mod test_utils;
 
-pub mod fma;
+mod numerics;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Error {
     /// not enough data to perform the interpolation with the required precision

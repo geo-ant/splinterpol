@@ -6,9 +6,9 @@ use super::Error;
 use crate::{
     TransmittableBoundaryExtension,
     bspline::{BSpline, BSpline3},
-    fma::{FloatVector, FusedMuladd},
     internal::compute_truncation_indices,
     iter_utils::{BlockedStridedSliceMut, StridedPointerAccess, StridedSliceMut},
+    numerics::{FloatVector, FusedMuladd},
 };
 
 #[cfg(test)]

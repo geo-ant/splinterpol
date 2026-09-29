@@ -1,4 +1,4 @@
-use crate::fma::FusedMuladd;
+use crate::numerics::FusedMuladd;
 
 #[test]
 //NOTE: for this test to meaningfully test something, we have to enable

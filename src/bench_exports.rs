@@ -1,7 +1,7 @@
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
-use crate::{Error, TransmittableBoundaryExtension, fma::FusedMuladd};
+use crate::{Error, TransmittableBoundaryExtension, numerics::FusedMuladd};
 
 pub fn apply_exponential_filter_in_place<F>(
     // the pole, -1 < alpha < 0

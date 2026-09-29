@@ -1,4 +1,4 @@
-use crate::{Error, fma::FusedMuladd};
+use crate::{Error, numerics::FusedMuladd};
 use num_traits::{ConstOne, ConstZero, Float};
 
 #[cfg(test)]
