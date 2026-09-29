@@ -8,14 +8,17 @@ edition = "2024"
 # the interpN crate.
 fma = []
 # allow dependency on the standard library (i.e. disabling the `no_std`)
-std = []
+std = ["num-traits/std"]
+# make this crate and its dependencies #[no_std] (default)
+no_std = ["num-traits/libm"]
 # only for internal benchmarking purposes
 __bench_internal = []
+default = ["no_std"]
 
 [dependencies]
 # see: docs.rs/crate/num-traits/latest
 # this is the way to use the no-std version of the crate
-num-traits = {version = "0.2", default-features = false, features = ["libm"]}
+num-traits = {version = "0.2", default-features = false}
 
 [dev-dependencies]
 float-cmp = "=0.10"

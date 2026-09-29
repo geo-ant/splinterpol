@@ -1,3 +1,6 @@
+// TODO make this into a `deny` lint conditional on not having some feature
+// `with_unsafe` or `allow_unsafe` in there...
+#![warn(unsafe_code)]
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![deny(
     clippy::unwrap_used,
@@ -8,9 +11,11 @@
     // unsafe_code,
     clippy::alloc_instead_of_core
 )]
-// TODO make this into a `deny` lint conditional on not having some feature
-// `with_unsafe` or `allow_unsafe` in there...
-#![warn(unsafe_code)]
+
+#[cfg(all(feature = "std", feature = "no_std"))]
+compile_error!(
+    "The `std` and `no_std` feature may not be enabled together. Use `default-features=false` and enable the desired feature explicitly."
+);
 
 use core::num::NonZero;
 
