@@ -37,9 +37,6 @@ pub fn coefficients2d<B, const NPOLES: usize>(
 where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSpline<NPOLES>,
-    // TODO: add a blocksize argument which will require a more ergonomic
-    // builder than this actual function, but should be fine
-    [B::Float; 1]: FloatVector<Scalar = B::Float>,
 {
     coefficients2d_blocked::<B, NPOLES, 1>(
         _bspline,
@@ -62,9 +59,6 @@ pub fn coefficients2d_blocked<B, const NPOLES: usize, const BLOCKSIZE: usize>(
 where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSpline<NPOLES>,
-    // TODO: add a blocksize argument which will require a more ergonomic
-    // builder than this actual function, but should be fine
-    [B::Float; BLOCKSIZE]: FloatVector<Scalar = B::Float>,
 {
     const { assert!(BLOCKSIZE >= 1) };
     let expected_len = match width.overflowing_mul(height) {
@@ -873,6 +867,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d_iter_vector<S, F>(
 ) -> Result<(), Error>
 where
     F: FloatVector,
+    F::Scalar: num_traits::ConstOne + num_traits::ConstZero,
     S: crate::iter_utils::StridedRandomAccess<Item = F>,
 {
     // use crate::iter_utils::StridedSlice;
