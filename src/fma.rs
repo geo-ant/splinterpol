@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod test;
 
-pub trait FloatVector: Copy {
+pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar> {
     type Scalar: num_traits::Float;
 
     /// BLAS inspired syntax a*x+y where x = self,y = addend are vectors and
@@ -46,102 +46,6 @@ where
     }
 }
 
-// impl FloatVector for f64 {
-//     type Scalar = Self;
-
-//     #[inline(always)]
-//     fn axpy(self, factor: Self::Scalar, addend: Self) -> Self {
-//         self.fmuladd(factor, addend)
-//     }
-
-//     #[inline(always)]
-//     fn scal(self, factor: Self::Scalar) -> Self {
-//         self * factor
-//     }
-
-//     #[inline(always)]
-//     fn sub(self, subtrahend: Self) -> Self {
-//         self - subtrahend
-//     }
-// }
-
-// impl FloatVector for f32 {
-//     type Scalar = Self;
-
-//     #[inline(always)]
-//     fn axpy(self, factor: Self::Scalar, addend: Self) -> Self {
-//         self.fmuladd(factor, addend)
-//     }
-
-//     #[inline(always)]
-//     fn scal(self, factor: Self::Scalar) -> Self {
-//         self * factor
-//     }
-
-//     #[inline(always)]
-//     fn sub(self, subtrahend: Self) -> Self {
-//         self - subtrahend
-//     }
-// }
-
-// impl<const N: usize> FloatVector for [f32; N] {
-//     type Scalar = f32;
-
-//     #[inline(always)]
-//     fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
-//         for j in 0..N {
-//             // self[j] = factor * self[j] + addend[j];
-//             self[j] = self[j].fmuladd(factor, addend[j]);
-//         }
-//         self
-//     }
-
-//     #[inline(always)]
-//     fn scal(mut self, factor: Self::Scalar) -> Self {
-//         for j in 0..N {
-//             self[j] *= factor;
-//         }
-//         self
-//     }
-
-//     #[inline(always)]
-//     fn sub(mut self, subtrahend: Self) -> Self {
-//         for j in 0..N {
-//             self[j] -= subtrahend[j];
-//         }
-//         self
-//     }
-// }
-
-// impl<const N: usize> FloatVector for [f64; N] {
-//     type Scalar = f64;
-
-//     #[inline(always)]
-//     fn axpy(mut self, factor: Self::Scalar, addend: Self) -> Self {
-//         for j in 0..N {
-//             // self[j] = factor * self[j] + addend[j];
-//             self[j] = self[j].fmuladd(factor, addend[j]);
-//         }
-//         self
-//     }
-
-//     #[inline(always)]
-//     fn scal(mut self, factor: Self::Scalar) -> Self {
-//         for j in 0..N {
-//             self[j] *= factor;
-//         }
-//         self
-//     }
-
-//     #[inline(always)]
-//     fn sub(mut self, subtrahend: Self) -> Self {
-//         for j in 0..N {
-//             self[j] -= subtrahend[j];
-//         }
-//         self
-//     }
-// }
-
 /// Trait exposing a fused mul-add or a fallback if the instruction doesn't exist
 /// This idea is taken from the `interpN` crate.
 pub trait FusedMuladd {
@@ -180,55 +84,3 @@ where
         }
     }
 }
-
-// impl FusedMuladd for f64 {
-//     #[inline(always)]
-//     /// try and make this a fused mul-add operation `self*factor+addend`
-//     /// and fall back on non-fma when the FMA feature is not enabled.
-//     fn fmuladd(self, factor: Self, addend: Self) -> Self {
-//         // NOTE(geo) when inspecting the assembly it looks like using
-//         // the std::mul_add emits better instructions compared to the
-//         // libm-based Float::mul_add implementation. However, to be
-//         // honest I haven't seen that change the actual performance,
-//         // so this might be overengineering. But it's cheap so what
-//         // the heck...
-//         // #[cfg(all(feature = "fma", feature = "std"))]
-//         // {
-//         //     f64::mul_add(self, factor, addend)
-//         // }
-//         #[cfg(all(feature = "fma"))]
-//         {
-//             num_traits::Float::mul_add(self, factor, addend)
-//         }
-//         #[cfg(not(feature = "fma"))]
-//         {
-//             self * factor + addend
-//         }
-//     }
-// }
-
-// impl FusedMuladd for f32 {
-//     #[inline(always)]
-//     /// try and make this a fused mul-add operation `self*factor+addend`
-//     /// and fall back on non-fma when the FMA feature is not enabled.
-//     fn fmuladd(self, factor: Self, addend: Self) -> Self {
-//         // NOTE(geo) when inspecting the assembly it looks like using
-//         // the std::mul_add emits better instructions compared to the
-//         // libm-based Float::mul_add implementation. However, to be
-//         // honest I haven't seen that change the actual performance,
-//         // so this might be overengineering. But it's cheap so what
-//         // the heck...
-//         // #[cfg(all(feature = "fma", feature = "std"))]
-//         // {
-//         //     f32::mul_add(self, factor, addend)
-//         // }
-//         #[cfg(all(feature = "fma"))]
-//         {
-//             num_traits::Float::mul_add(self, factor, addend)
-//         }
-//         #[cfg(not(feature = "fma"))]
-//         {
-//             self * factor + addend
-//         }
-//     }
-// }

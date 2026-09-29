@@ -57,7 +57,7 @@ pub fn coefficients2d_blocked<B, const NPOLES: usize, const BLOCKSIZE: usize>(
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
 where
-    B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
+    B::Float: Float + ConstOne + ConstZero + Sum,
     B: BSpline<NPOLES>,
 {
     const { assert!(BLOCKSIZE >= 1) };
