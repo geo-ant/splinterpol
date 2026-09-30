@@ -511,36 +511,64 @@ where
     //     idx += 1;
     // }
 
-    // --- level-2 algebraic unrolling ---
+    // --- level-2 algebraic unrolling/unrolled ---
+    const STEP: usize = 2;
     let mut last = signal[0];
-    let mut idx = 2;
+    // let mut idx = STEP;
     let end_idx = signal.len() - 1;
     if end_idx >= signal.len() {
         return Err(Error::OutOfBounds);
     }
     let alpha_sq = alpha * alpha;
 
-    loop {
-        if idx > end_idx {
-            break;
+    let mut start = 1; // Always 1, independent of STEP!
+    if STEP > 1 {
+        loop {
+            // -- "generic" unrolled --
+            let Some(chunk) = signal[start..].first_chunk_mut::<STEP>() else {
+                break;
+            }; // The selected slice has exactly STEP elements.
+
+            *chunk = causal_blocked(*chunk, alpha, last);
+            last = chunk[STEP - 1];
+            start += STEP;
+            // -- end "generic" unrolled --
+
+            // --manually unrolled with step 2--
+            // if idx > end_idx {
+            //     break;
+            // }
+            // let x0 = signal[idx];
+            // let x1 = signal[idx - 1];
+            // // y[idx-1] = x[idx-1] + alpha*y[idx-2];
+            // //          = x1 + alpha * last
+            // let y1 = last.fmuladd(alpha, x1);
+            // // y[idx] = x[idx] + alpha*y[idx-1] = x[idx] + alpha*x[idx-1] + alpha^2 * y[idx-2]
+            // //        = x0 + alpha*x1 + alpha^2 * last
+            // let y0 = last.fmuladd(alpha_sq, x1.fmuladd(alpha, x0));
+            // last = y0;
+            // signal[idx] = y0;
+            // signal[idx - 1] = y1;
+            // idx += STEP;
         }
-        let x0 = signal[idx];
-        let x1 = signal[idx - 1];
-        // y[idx-1] = x[idx-1] + alpha*y[idx-2];
-        //          = x1 + alpha * last
-        let y1 = last.fmuladd(alpha, x1);
-        // y[idx] = x[idx] + alpha*y[idx-1] = x[idx] + alpha*x[idx-1] + alpha^2 * y[idx-2]
-        //        = x0 + alpha*x1 + alpha^2 * last
-        let y0 = last.fmuladd(alpha_sq, x1.fmuladd(alpha, x0));
-        last = y0;
-        signal[idx] = y0;
-        signal[idx - 1] = y1;
-        idx += 2;
     }
-    // tail must be processed as well when unrolling! The last up to step-1 elements
-    // must be processed, which for step 2 is at most 1 element
-    if idx - 1 == end_idx {
-        signal[end_idx] = signal[end_idx] + alpha * signal[end_idx - 1];
+
+    // // tail must be processed as well when unrolling! The last up to step-1 elements
+    // // must be processed, which for step 2 is at most 1 element
+    // if idx - 1 == end_idx {
+    //     signal[end_idx] = signal[end_idx] + alpha * signal[end_idx - 1];
+    // }
+
+    // tail handling.
+    // NOTE PERF(geo) for some extra overengineering we could try and go through
+    // the block sizes STEP-1, STEP-2, ..., 1 until the first one hits and
+    // then use that block size.
+    while start <= end_idx {
+        let cur = signal[start];
+        let new = last.fmuladd(alpha, cur);
+        signal[start] = new;
+        last = new;
+        start += 1;
     }
 
     // // Iterator version
@@ -590,7 +618,7 @@ where
     // It performs maybe very very slighly better than the iterator based loop,
     // but not enough for me to abandon the iterator loop.
 
-    // // --- original loop ---
+    // // --- original loop (anticausal) ---
     // let mut idx = end_idx - 1;
     // let mut last = signal[end_idx];
     // loop {
@@ -604,9 +632,42 @@ where
     //     idx -= 1;
     // }
 
+    // // TODO TAIL HANDLING
+    // // --- manually algebraically unrolled ---
+    // const STEP: usize = 2;
+    // let mut idx;
+    // if end_idx > STEP {
+    //     idx = end_idx - STEP;
+    //     let mut last = signal[end_idx];
+    //     loop {
+    //         let x0 = signal[idx];
+    //         let x1 = signal[idx + 1];
+    //         let y1 = alpha * (last - x1);
+    //         // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
+    //         // let y1 = last.fmuladd(alpha, neg_alpha * x1);
+    //         // let y0 = alpha * (y1 - x0);
+    //         let y0 = alpha_sq * last - alpha_sq * x1 - alpha * x0;
+    //         // let y0 = alpha_sq * (last - x1) - alpha * x0;
+    //         // let y0 = alpha * (alpha * (last - x1) - x0);
+    //         // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
+    //         // let y0 = x0.fmuladd(neg_alpha, last.fmuladd(alpha_sq, neg_alpha_sq * x1));
+    //         signal[idx + 1] = y1;
+    //         signal[idx] = y0;
+    //         last = y0;
+    //         if idx < STEP {
+    //             break;
+    //         }
+    //         idx -= STEP;
+    //     }
+    // } else {
+    //     idx = end_idx - 1;
+    // }
+    // if idx != 0 {
+    //     signal[0] = alpha * (signal[1] - signal[0]);
+    // }
+
     // TODO TAIL HANDLING
     // --- algebraically unrolled ---
-    const STEP: usize = 2;
     let mut idx;
     if end_idx > STEP {
         idx = end_idx - STEP;
@@ -1062,4 +1123,83 @@ where
         .for_each(drop);
 
     Ok(())
+}
+
+#[inline(always)]
+fn causal_blocked<const N: usize, F: Float + Sum + ConstZero>(
+    x: [F; N],
+    alpha: F,
+    prologue: F,
+) -> [F; N] {
+    const { assert!(N < i32::MAX as _) };
+    // causal relation is eqn 39 in the B&M paper
+    //
+    // y[i] = x[i] + alpha*y[i-1]
+    //
+    // where y[-1] = p = prologue
+    //
+    // NOTE that the causal recurrence goes left to right and
+    // y[0] is the left end of the block and prologue is before that.
+    //
+    // manually unrolling the recurrence relation also follows the left
+    // to right logic, meaning
+    //
+    // y[0] = x[0] + alpha*p  [all of those terms are known]
+    // y[1] = x[1] + alpha*y[0] = x[1] + alpha x[0] + alpha^2 * p
+    // y[2] = ...
+    //
+    // y[k] = ...
+    let mut y = [F::ZERO; N];
+
+    for j in 0..N {
+        for k in 0..=j {
+            y[j] = x[j - k].mul_add(alpha.powi(k as i32), y[j]);
+        }
+
+        y[j] = prologue.mul_add(alpha.powi((j + 1) as i32), y[j]);
+    }
+    y
+}
+
+#[inline(always)]
+fn anticausal_blocked<const N: usize, F: Float + Sum + ConstZero>(
+    y: [F; N],
+    alpha: F,
+    epilogue: F,
+) -> [F; N] {
+    const { assert!(N < i32::MAX as _) };
+
+    // anticausal relation is eqn 47 in the B&M paper
+    // z[i] = alpha (z[i+1] - y[i])
+    //
+    // where the recurrence goes from RIGHT TO LEFT. And since
+    // we have N block elements indexed [0,...,N-1]
+    // that means our epilogue comes into play as:
+    //
+    // z[N-1 + 1] = z[N] = epilogue = e
+    //
+    // and then it makes sense to first write the recurrence
+    // relation starting at the last element z[N-1]:
+    //
+    // z[N-1] = alpha (e - y[N-1]) = alpha*e - alpha*y[N-1]
+    // z[N-1 -1] = alpha * (z[N-1] - y[N-1-1]) = alpha^2 * e - alpha^2 * y[N-1] - alpha y[N-1-1]
+    //
+    // this leads us to a formulation for z[k]:
+    // z[k] = alpha^(N-k)*e - \sum_{j=k}^{N-1} (alpha^{j-k+1}y[j])
+
+    // TODO perf, see if there are better ways of expressing the sums,
+    // maybe by hand-coding the terms for certain block sizes rather than
+    // using the loops here. Those can (in theory) be unrolled by the compiler,
+    // but I'm not sure that it'll take advantage of this...
+    let mut z = [F::ZERO; N];
+    for k in 0..N {
+        let mut sum = F::ZERO;
+        for j in k..N {
+            sum = y[j].fmuladd(alpha.powi((j - k + 1) as i32), sum);
+        }
+
+        z[k] = epilogue.fmuladd(alpha.powi((N - k) as i32), -sum);
+    }
+
+    z
 }

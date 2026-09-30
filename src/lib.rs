@@ -19,15 +19,17 @@ compile_error!(
 
 use core::num::NonZero;
 
+#[cfg(feature = "__bench_internal")]
+#[doc(hidden)]
+pub mod bench_exports;
+
 pub mod inplace;
+
 mod internal;
 mod iter_utils;
 
 /// B-splines for interpolation
 pub mod bspline;
-
-// #[cfg(feature = "__bench_internal")]
-pub mod bench_exports;
 
 #[cfg(test)]
 mod test_utils;
