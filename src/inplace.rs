@@ -38,7 +38,7 @@ where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSpline<NPOLES>,
 {
-    coefficients2d_blocked::<B, NPOLES, 1>(
+    coefficients2d_blocked::<B, NPOLES, 1, 1>(
         _bspline,
         image_data,
         width,
@@ -48,7 +48,12 @@ where
     )
 }
 
-pub fn coefficients2d_blocked<B, const NPOLES: usize, const BLOCKSIZE: usize>(
+pub fn coefficients2d_blocked<
+    B,
+    const NPOLES: usize,
+    const ROW_BLOCKSIZE: usize,
+    const COL_BLOCKSIZE: usize,
+>(
     _bspline: B,
     image_data: &mut [B::Float],
     width: usize,
@@ -60,7 +65,7 @@ where
     B::Float: Float + ConstOne + ConstZero + Sum,
     B: BSpline<NPOLES>,
 {
-    const { assert!(BLOCKSIZE >= 1) };
+    const { assert!(COL_BLOCKSIZE >= 1) };
     let expected_len = match width.overflowing_mul(height) {
         (val, false) => val,
         (_, true) => return Err(Error::Overflow),
@@ -97,10 +102,10 @@ where
         // this if is probably not necessary, but since I'm doing all the
         // premature optimization I can think of, I might just as well
         // give the compiler the chance to remove that code at compile
-        let remaining_start_idx = if BLOCKSIZE > 1 {
+        let remaining_start_idx = if COL_BLOCKSIZE > 1 {
             let mut idx = 0;
-            for col in (0..width.get()).step_by(BLOCKSIZE) {
-                let Some(col) = BlockedStridedSliceMut::<BLOCKSIZE, B::Float>::new(
+            for col in (0..width.get()).step_by(COL_BLOCKSIZE) {
+                let Some(col) = BlockedStridedSliceMut::<COL_BLOCKSIZE, B::Float>::new(
                     image_data,
                     crate::iter_utils::StridedAccessArgs {
                         offset: col,
@@ -117,7 +122,7 @@ where
                     truncation_index,
                     boundary_extension,
                 )?;
-                idx += BLOCKSIZE;
+                idx += COL_BLOCKSIZE;
             }
             idx
         } else {
@@ -161,7 +166,7 @@ where
             .try_for_each(|row| {
                 // NOTE PERF: interestingly, this performs better than the
                 // slice based method in 2d benchmarks...
-                apply_exponential_filter_in_place_1d(
+                apply_exponential_filter_in_place_1d::<_, ROW_BLOCKSIZE>(
                     pole,
                     row,
                     truncation_index,
@@ -382,7 +387,7 @@ where
 //TODO doc: apply the filter in place from elements {0, len-1}
 // this only works for 1D signals becaue it requires the signal
 // to be contiguous.
-pub(crate) fn apply_exponential_filter_in_place_1d<F>(
+pub(crate) fn apply_exponential_filter_in_place_1d<F, const BLOCKSIZE: usize>(
     // the pole, -1 < alpha < 0
     alpha: F,
     signal: &mut [F],
@@ -395,6 +400,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d<F>(
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
 {
+    const { assert!(BLOCKSIZE > 0) };
     if signal.is_empty() {
         return Err(Error::NoData);
     }
@@ -511,27 +517,26 @@ where
     //     idx += 1;
     // }
 
-    // --- level-2 algebraic unrolling/unrolled ---
-    const STEP: usize = 2;
-    let mut last = signal[0];
+    // --- algebraic unrolling/unrolled ---
+    let mut prologue = signal[0];
     // let mut idx = STEP;
     let end_idx = signal.len() - 1;
     if end_idx >= signal.len() {
         return Err(Error::OutOfBounds);
     }
-    let alpha_sq = alpha * alpha;
+    // let alpha_sq = alpha * alpha;
 
     let mut start = 1; // Always 1, independent of STEP!
-    if STEP > 1 {
+    if BLOCKSIZE > 1 {
         loop {
             // -- "generic" unrolled --
-            let Some(chunk) = signal[start..].first_chunk_mut::<STEP>() else {
+            let Some(chunk) = signal[start..].first_chunk_mut::<BLOCKSIZE>() else {
                 break;
-            }; // The selected slice has exactly STEP elements.
+            };
 
-            *chunk = causal_blocked(*chunk, alpha, last);
-            last = chunk[STEP - 1];
-            start += STEP;
+            *chunk = causal_blocked(*chunk, alpha, prologue);
+            prologue = chunk[BLOCKSIZE - 1];
+            start += BLOCKSIZE;
             // -- end "generic" unrolled --
 
             // --manually unrolled with step 2--
@@ -565,9 +570,9 @@ where
     // then use that block size.
     while start <= end_idx {
         let cur = signal[start];
-        let new = last.fmuladd(alpha, cur);
+        let new = prologue.fmuladd(alpha, cur);
         signal[start] = new;
-        last = new;
+        prologue = new;
         start += 1;
     }
 
@@ -668,35 +673,45 @@ where
 
     // TODO TAIL HANDLING
     // --- algebraically unrolled ---
-    let mut idx;
-    if end_idx > STEP {
-        idx = end_idx - STEP;
-        let mut last = signal[end_idx];
+
+    // idx is the first element of the block with `STEP` elements
+    let mut idx = end_idx;
+    let mut epilogue = signal[end_idx];
+    if BLOCKSIZE > 1 {
+        if end_idx > BLOCKSIZE {
+            idx -= BLOCKSIZE;
+            loop {
+                let Some(chunk) = signal[idx..].first_chunk_mut::<BLOCKSIZE>() else {
+                    break;
+                };
+                *chunk = anticausal_blocked(*chunk, alpha, epilogue);
+                epilogue = chunk[0];
+
+                if idx < BLOCKSIZE {
+                    break;
+                }
+                idx -= BLOCKSIZE;
+            }
+        } else {
+            idx = end_idx - 1;
+        }
+    }
+
+    // tail handling
+    // NOTE(geo) for some (probably massive overengineering) we could revisit
+    // the same note as in the causal block, where we use the
+    if idx != 0 {
+        idx -= 1;
         loop {
-            let x0 = signal[idx];
-            let x1 = signal[idx + 1];
-            let y1 = alpha * (last - x1);
-            // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
-            // let y1 = last.fmuladd(alpha, neg_alpha * x1);
-            // let y0 = alpha * (y1 - x0);
-            let y0 = alpha_sq * last - alpha_sq * x1 - alpha * x0;
-            // let y0 = alpha_sq * (last - x1) - alpha * x0;
-            // let y0 = alpha * (alpha * (last - x1) - x0);
-            // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
-            // let y0 = x0.fmuladd(neg_alpha, last.fmuladd(alpha_sq, neg_alpha_sq * x1));
-            signal[idx + 1] = y1;
-            signal[idx] = y0;
-            last = y0;
-            if idx < STEP {
+            let cur = signal[idx];
+            let new = alpha * (epilogue - cur);
+            signal[idx] = new;
+            epilogue = new;
+            if idx == 0 {
                 break;
             }
-            idx -= STEP;
+            idx -= 1;
         }
-    } else {
-        idx = end_idx - 1;
-    }
-    if idx != 0 {
-        signal[0] = alpha * (signal[1] - signal[0]);
     }
 
     // // --- iterator based loop ---
