@@ -1,3 +1,4 @@
+use crate::bspline::*;
 use float_cmp::assert_approx_eq;
 use std::num::NonZero;
 
@@ -6,9 +7,10 @@ use crate::{
     bspline::{BSpline3, BSpline10},
     inplace::{
         apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
-        coefficients2d, coefficients2d_blocked,
+        causal_blocked, coefficients2d, coefficients2d_blocked,
     },
     iter_utils::StridedSliceMut,
+    parametrized_test,
     test_utils::read_f64le,
 };
 
@@ -951,9 +953,53 @@ fn test_coefficients2d_bspline10(
     );
 }
 
+fn reference_causal<const N: usize>(prologue: f64, alpha: f64, data: &[f64; N]) -> [f64; N] {
+    // from eq. 39 in B&M paper
+    let mut data = *data;
+
+    data[0] = data[0] + alpha * prologue;
+    for idx in 1..N {
+        data[idx] = data[idx] + alpha * data[idx - 1];
+    }
+    data
+}
+
+parametrized_test! {
 #[test]
-fn blocked_causal_produces_correct_results() {
-    todo!()
+#[parametrize(1,2,3,4,5,6,7,8,16,17)]
+fn blocked_causal_produces_correct_results<const BLOCKSIZE: usize>() {
+    let mut data = read_f64le("test-assets/expfilter/data1.f64");
+
+    let max = data.iter().max_by(|a,b|f64::total_cmp(a,b)).copied().unwrap();
+    let min = data.iter().min_by(|a,b|f64::total_cmp(a,b)).copied().unwrap();
+
+    let (chunks, _remainder) = data.as_chunks_mut::<BLOCKSIZE>();
+    // use >= 2 so we test zero prologue and nonzero prologue
+    assert!(chunks.len() >= 2);
+
+
+    // we use some bullshit individual prologue for each array, but that's
+    // fine. Here we don't care about actually transforming the
+    // whole array correctly. This is just on chunk level.
+    for (prologue, x, alpha) in chunks
+        .into_iter()
+        .enumerate()
+        // if we don't clamp, the prologue will get unreasonably large
+        // and lead to numerical errors
+        .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::POLES[0]))
+    {
+        let expected = reference_causal(prologue, alpha, x);
+        let actual = causal_blocked(*x, alpha, prologue);
+
+        assert_approx_eq!(
+            &[f64],
+            &expected.as_slice(),
+            &actual.as_slice(),
+            epsilon = 10.*f64::EPSILON
+            // ulps = 5
+        );
+    }
+}
 }
 
 #[test]

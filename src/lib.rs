@@ -35,6 +35,7 @@ mod iter_utils;
 pub mod bspline;
 
 #[cfg(test)]
+#[macro_use]
 mod test_utils;
 
 mod numerics;

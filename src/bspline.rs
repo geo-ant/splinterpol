@@ -5,7 +5,7 @@ use num_traits::Float;
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
-pub trait BSpline<const NPOLES: usize> {
+pub trait BSpline<const NPOLES: usize>: Copy + Default {
     /// Floating point type with which the calculations for this spline type
     /// can be performed
     type Float: num_traits::Float;
@@ -31,9 +31,16 @@ pub trait BSpline<const NPOLES: usize> {
 pub type CubicBSpline<T> = BSpline3<T>;
 
 /// B-spline of order 3
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct BSpline3<T: Float> {
     phantom: PhantomData<T>,
+}
+
+impl<T: Float> Default for BSpline3<T> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BSpline<1> for BSpline3<f32> {
@@ -42,7 +49,14 @@ impl BSpline<1> for BSpline3<f32> {
     const POLES: [f32; 1] = [-0.2679491924311227 as _];
 }
 
-impl BSpline3<f64> {}
+impl<T: Float> BSpline3<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
+}
 
 impl BSpline<1> for BSpline3<f64> {
     type Float = f64;

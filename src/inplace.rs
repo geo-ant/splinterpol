@@ -14,16 +14,27 @@ use crate::{
 #[cfg(test)]
 mod test;
 
+/// some helper code that contains builder logic to call the function because
+/// generic parameters and const generics can make the function slightly awkward
+/// to call.
+mod builder;
+
+pub use builder::Coefficients2d;
+
 // just to check that the function can be called easily
-fn _foo() {
-    _ = coefficients2d(
-        BSpline3::<f64>::default(),
-        &mut [1.],
-        100,
-        100,
-        0.1,
-        TransmittableBoundaryExtension::Mirrored,
-    );
+#[expect(dead_code)]
+fn foo() {
+    Coefficients2d::new(BSpline3::<f64>::default())
+        .with_column_blocksize::<3>()
+        .with_row_blocksize::<1>()
+        .compute(
+            &mut [1.],
+            100,
+            100,
+            0.1,
+            TransmittableBoundaryExtension::Mirrored,
+        )
+        .unwrap()
 }
 
 pub fn coefficients2d<B, const NPOLES: usize>(
