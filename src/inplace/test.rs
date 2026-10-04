@@ -6,7 +6,7 @@ use crate::{
     bspline::{BSpline3, BSpline10},
     inplace::{
         apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
-        apply_exponential_filter_in_place_strided, coefficients2d,
+        apply_exponential_filter_in_place_strided, coefficients2d, coefficients2d_blocked,
     },
     iter_utils::StridedSliceMut,
     test_utils::read_f64le,
@@ -679,21 +679,108 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Mirrored,
+    1,
+    1
 )]
 #[test_case::test_case(
     "test-assets/coefficients2d/image_512x1024.f64",
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic
+    TransmittableBoundaryExtension::Periodic,
+    1,
+    1
 )]
 #[test_case::test_case(
     "test-assets/coefficients2d/image_512x1024.f64",
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric
+    TransmittableBoundaryExtension::WholeSymmetric,
+    1,
+    1
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    7,
+    6
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    7,
+    6
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    7,
+    6
 )]
 fn test_coefficients2d_bspline3(
     data: &str,
@@ -701,16 +788,40 @@ fn test_coefficients2d_bspline3(
     width: usize,
     height: usize,
     ext: TransmittableBoundaryExtension,
+    row_blocksize: usize,
+    col_blocksize: usize,
 ) {
     let orig = read_f64le(data);
     let expected = read_f64le(expected);
 
     let epsilon = 1e-5;
 
-    todo!("test different block sizes here!");
-
     let mut image_data = orig.clone();
-    coefficients2d(
+
+    // see the other tests: hacky, but useful way to allow runtime
+    // blocksizes and transform this into compile time block sizes
+
+    let coefficients2d_with_blocksize =
+        |bspline, image_data: &mut [f64], width, height, epsilon, ext| match (
+            row_blocksize,
+            col_blocksize,
+        ) {
+            (1, 1) => coefficients2d(bspline, image_data, width, height, epsilon, ext),
+            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (r, c) => {
+                panic!("unsupported blocksize: R={r}, C={c}")
+            }
+        };
+
+    coefficients2d_with_blocksize(
         BSpline3::<f64>::default(),
         &mut image_data,
         width,
@@ -719,7 +830,6 @@ fn test_coefficients2d_bspline3(
         ext,
     )
     .unwrap();
-
     assert_approx_eq!(
         &[f64],
         &expected.as_slice(),
@@ -735,21 +845,108 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Mirrored,
+    1,
+    1
 )]
 #[test_case::test_case(
     "test-assets/coefficients2d/image_512x1024.f64",
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic
+    TransmittableBoundaryExtension::Periodic,
+    1,
+    1
 )]
 #[test_case::test_case(
     "test-assets/coefficients2d/image_512x1024.f64",
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric
+    TransmittableBoundaryExtension::WholeSymmetric,
+    1,
+    1
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    8,
+    8
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    6,
+    7
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Mirrored,
+    7,
+    6
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::Periodic,
+    7,
+    6
+)]
+#[test_case::test_case(
+    "test-assets/coefficients2d/image_512x1024.f64",
+    "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
+    512,
+    1024,
+    TransmittableBoundaryExtension::WholeSymmetric,
+    7,
+    6
 )]
 fn test_coefficients2d_bspline10(
     data: &str,
@@ -757,16 +954,36 @@ fn test_coefficients2d_bspline10(
     width: usize,
     height: usize,
     ext: TransmittableBoundaryExtension,
+    row_blocksize: usize,
+    col_blocksize: usize,
 ) {
     let orig = read_f64le(data);
     let expected = read_f64le(expected);
 
     let epsilon = 1e-5;
 
-    todo!("test different block sizes here!");
+    let coefficients2d_with_blocksize =
+        |bspline, image_data: &mut [f64], width, height, epsilon, ext| match (
+            row_blocksize,
+            col_blocksize,
+        ) {
+            (1, 1) => coefficients2d(bspline, image_data, width, height, epsilon, ext),
+            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(
+                bspline, image_data, width, height, epsilon, ext,
+            ),
+            (r, c) => {
+                panic!("unsupported blocksize: R={r}, C={c}")
+            }
+        };
 
     let mut image_data = orig.clone();
-    coefficients2d(
+    coefficients2d_with_blocksize(
         BSpline10::<f64>::default(),
         &mut image_data,
         width,
