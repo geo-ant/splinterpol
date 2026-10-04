@@ -934,6 +934,7 @@ fn causal_blocked<const N: usize, F: Float + Sum + ConstZero>(
     prologue: F,
 ) -> [F; N] {
     const { assert!(N < i32::MAX as _) };
+    const { assert!(N > 0) };
     // causal relation is eqn 39 in the B&M paper
     //
     // y[i] = x[i] + alpha*y[i-1]
@@ -952,6 +953,24 @@ fn causal_blocked<const N: usize, F: Float + Sum + ConstZero>(
     //
     // y[k] = ...
     let mut y = [F::ZERO; N];
+
+    // TODO PERF: investigate the pre-calculation based approach: is this really useful!!??
+    // TODP PERF: if so, make this into a struct that's initialized once
+    // and carries that state.
+    // let mut alpha_powi = [F::ZERO; N];
+    // for n in 0..N {
+    //     alpha_powi[n] = alpha.powi(n as _);
+    // }
+    // let alpha_powi = alpha_powi;
+    // for j in 0..N {
+    //     for k in 0..=j {
+    //         y[j] = x[j - k].mul_add(alpha_powi[k], y[j]);
+    //     }
+
+    //     //                         hacky because we need alpha_powi[j+1] but we don't have j+1 here
+    //     y[j] = prologue.mul_add(alpha * alpha_powi[j], y[j]);
+    // }
+    // y
 
     for j in 0..N {
         for k in 0..=j {

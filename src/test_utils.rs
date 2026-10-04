@@ -1,27 +1,25 @@
 use std::path::Path;
 
 #[macro_export]
+// utility macro for parametrizing a test with different instantiations
+// of a single const-generic parameter.
 macro_rules! parametrized_test {
-    // instantiate a test taking one const generic arguments
-    // with many values of that argument
     (
         #[test]
         #[parametrize($($val:literal),+ $(,)?)]
-        fn $fnname:ident<const $generic:ident : $type:ty>() $block:block
+        fn $fn:ident<const $generic:ident : $type:ty>() $block:block
     ) => {
 
-        // #[track_caller]
-        fn $fnname<const $generic: $type>() $block
+        fn $fn<const $generic: $type>() $block
 
         paste::paste! {
             $(
                 #[test]
-                fn [<$fnname _ $generic:lower _ $val>]() {
-                    $fnname::<$val>();
+                fn [<$fn _ $generic:lower _ $val>]() {
+                    $fn::<$val>();
                 }
             )+
         }
-
     };
 }
 

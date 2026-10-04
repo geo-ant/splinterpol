@@ -1,4 +1,7 @@
-use crate::{bspline::*, inplace::anticausal_blocked};
+use crate::{
+    bspline::*,
+    inplace::{Coefficients2d, anticausal_blocked},
+};
 use float_cmp::assert_approx_eq;
 use std::num::NonZero;
 
@@ -919,10 +922,11 @@ fn test_coefficients2d_bspline10(
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => coefficients2d(bspline, image_data, width, height, epsilon, ext),
-            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
+            (1, 1) => Coefficients2d::new(bspline).compute(image_data, width, height, epsilon, ext),
+            (6, 7) => Coefficients2d::new(bspline)
+                .with_row_blocksize::<6>()
+                .with_column_blocksize::<7>()
+                .compute(image_data, width, height, epsilon, ext),
             (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(
                 bspline, image_data, width, height, epsilon, ext,
             ),

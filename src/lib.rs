@@ -17,7 +17,7 @@
 
 #[cfg(all(feature = "std", feature = "no_std"))]
 compile_error!(
-    "The `std` and `no_std` feature may not be enabled together. Use `default-features=false` and enable the desired feature explicitly."
+    "The `std` and `no_std` feature must not be used together. Use `default-features=false` and enable only the desired feature explicitly."
 );
 
 use core::num::NonZero;

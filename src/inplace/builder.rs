@@ -104,8 +104,8 @@ pub struct Coefficients2d<
 
 impl<const NPOLES: usize, B: BSpline<NPOLES>> Coefficients2d<NPOLES, B, 1, 1> {
     #[inline(always)]
-    /// create a new builder for calculating the coefficients of the given spline
-    /// in place
+    /// create a new builder for computing the coefficients of the given spline
+    /// in-place
     pub fn new(bspline: B) -> Self {
         Self { bspline }
     }
