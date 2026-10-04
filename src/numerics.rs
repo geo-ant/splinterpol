@@ -74,7 +74,7 @@ where
         // {
         //     f64::mul_add(self, factor, addend)
         // }
-        #[cfg(all(feature = "fma"))]
+        #[cfg(feature = "fma")]
         {
             num_traits::Float::mul_add(self, factor, addend)
         }

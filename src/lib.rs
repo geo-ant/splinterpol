@@ -1,6 +1,9 @@
 // TODO make this into a `deny` lint conditional on not having some feature
 // `with_unsafe` or `allow_unsafe` in there...
 #![warn(unsafe_code)]
+// lesson learned from interpn: needless range loops can sometimes be pretty
+// neat for performance
+#![allow(clippy::needless_range_loop)]
 #![cfg_attr(not(any(test, feature = "std")), no_std)]
 #![deny(
     clippy::unwrap_used,

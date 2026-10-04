@@ -329,33 +329,11 @@ where
 
     let mut start = 1; // Always 1, independent of STEP!
     if BLOCKSIZE > 1 {
-        loop {
-            // -- "generic" unrolled --
-            let Some(chunk) = signal[start..].first_chunk_mut::<BLOCKSIZE>() else {
-                break;
-            };
-
+        // -- "generic" unrolled --
+        while let Some(chunk) = signal[start..].first_chunk_mut::<BLOCKSIZE>() {
             *chunk = causal_blocked(*chunk, alpha, prologue);
             prologue = chunk[BLOCKSIZE - 1];
             start += BLOCKSIZE;
-            // -- end "generic" unrolled --
-
-            // --manually unrolled with step 2--
-            // if idx > end_idx {
-            //     break;
-            // }
-            // let x0 = signal[idx];
-            // let x1 = signal[idx - 1];
-            // // y[idx-1] = x[idx-1] + alpha*y[idx-2];
-            // //          = x1 + alpha * last
-            // let y1 = last.fmuladd(alpha, x1);
-            // // y[idx] = x[idx] + alpha*y[idx-1] = x[idx] + alpha*x[idx-1] + alpha^2 * y[idx-2]
-            // //        = x0 + alpha*x1 + alpha^2 * last
-            // let y0 = last.fmuladd(alpha_sq, x1.fmuladd(alpha, x0));
-            // last = y0;
-            // signal[idx] = y0;
-            // signal[idx - 1] = y1;
-            // idx += STEP;
         }
     }
 
@@ -481,10 +459,7 @@ where
     if BLOCKSIZE > 1 {
         if end_idx > BLOCKSIZE {
             idx -= BLOCKSIZE;
-            loop {
-                let Some(chunk) = signal[idx..].first_chunk_mut::<BLOCKSIZE>() else {
-                    break;
-                };
+            while let Some(chunk) = signal[idx..].first_chunk_mut::<BLOCKSIZE>() {
                 *chunk = anticausal_blocked(*chunk, alpha, epilogue);
                 epilogue = chunk[0];
 
