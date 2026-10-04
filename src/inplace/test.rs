@@ -401,7 +401,6 @@ use crate::{
     TransmittableBoundaryExtension::WholeSymmetric,
     8
 )]
-#[allow(unsafe_code)]
 fn exponential_filter_reproduces_reference_results(
     data: &str,
     expected: &str,

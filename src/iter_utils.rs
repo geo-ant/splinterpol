@@ -1,6 +1,3 @@
-// TODO(geo) feature gate this...
-#![allow(unsafe_code)]
-
 use core::num::NonZero;
 
 /// abstracts over sequence access in a strided or non-strided slice.
