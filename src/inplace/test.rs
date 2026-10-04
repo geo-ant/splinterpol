@@ -1,4 +1,4 @@
-use crate::bspline::*;
+use crate::{bspline::*, inplace::anticausal_blocked};
 use float_cmp::assert_approx_eq;
 use std::num::NonZero;
 
@@ -1002,7 +1002,52 @@ fn blocked_causal_produces_correct_results<const BLOCKSIZE: usize>() {
 }
 }
 
-#[test]
-fn blocked_anticausal_produces_correct_results() {
-    todo!()
+fn reference_anticausal<const N: usize>(epilogue: f64, alpha: f64, data: &[f64; N]) -> [f64; N] {
+    const { assert!(N > 0) };
+    // from eq. 47 in B&M paper
+    let mut data = *data;
+
+    data[N - 1] = alpha * (epilogue - data[N - 1]);
+    for idx in (0..N - 1).rev() {
+        data[idx] = alpha * (data[idx + 1] - data[idx]);
+    }
+    data
+}
+
+parametrized_test! {
+    #[test]
+    #[parametrize(1,2,3,4,5,6,7,8,16,17)]
+    fn blocked_anticausal_produces_correct_results<const BLOCKSIZE:usize>() {
+        let mut data = read_f64le("test-assets/expfilter/data1.f64");
+
+        let max = data.iter().max_by(|a,b|f64::total_cmp(a,b)).copied().unwrap();
+        let min = data.iter().min_by(|a,b|f64::total_cmp(a,b)).copied().unwrap();
+
+        let (chunks, _remainder) = data.as_chunks_mut::<BLOCKSIZE>();
+        // use >= 2 so we test zero prologue and nonzero prologue
+        assert!(chunks.len() >= 2);
+
+
+        // we use some bullshit individual prologue for each array, but that's
+        // fine. Here we don't care about actually transforming the
+        // whole array correctly. This is just on chunk level.
+        for (epilogue, x, alpha) in chunks
+            .into_iter()
+            .enumerate()
+            // if we don't clamp, the prologue will get unreasonably large
+            // and lead to numerical errors
+            .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::POLES[0]))
+        {
+            let expected = reference_anticausal(epilogue, alpha, x);
+            let actual = anticausal_blocked(*x, alpha, epilogue);
+
+            assert_approx_eq!(
+                &[f64],
+                &expected.as_slice(),
+                &actual.as_slice(),
+                epsilon = 10.*f64::EPSILON
+                // ulps = 5
+            );
+        }
+    }
 }
