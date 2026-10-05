@@ -1,4 +1,6 @@
-use crate::{Error, TransmittableBoundaryExtension, bspline::BSpline, numerics::FusedMuladd};
+use crate::{
+    Error, TransmittableBoundaryExtension, bspline::BSplinePrefilter, numerics::FusedMuladd,
+};
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
@@ -93,7 +95,7 @@ pub struct Coefficients2d<
     // number of poles of the spline
     const NPOLES: usize,
     // bspline to use for interpolationj
-    B: BSpline<NPOLES>,
+    B: BSplinePrefilter<NPOLES>,
     // row-blocksize for calculations
     const RB: usize,
     // column-blocksize for calculations
@@ -102,7 +104,7 @@ pub struct Coefficients2d<
     bspline: B,
 }
 
-impl<const NPOLES: usize, B: BSpline<NPOLES>> Coefficients2d<NPOLES, B, 1, 1> {
+impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>> Coefficients2d<NPOLES, B, 1, 1> {
     #[inline(always)]
     /// create a new builder for computing the coefficients of the given spline
     /// in-place
@@ -111,7 +113,9 @@ impl<const NPOLES: usize, B: BSpline<NPOLES>> Coefficients2d<NPOLES, B, 1, 1> {
     }
 }
 
-impl<const NPOLES: usize, B: BSpline<NPOLES>, const RB: usize> Coefficients2d<NPOLES, B, RB, 1> {
+impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize>
+    Coefficients2d<NPOLES, B, RB, 1>
+{
     #[inline(always)]
     /// set the column blocksize for calculation to this nonzero compile time value
     pub fn with_column_blocksize<const CB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
@@ -121,7 +125,9 @@ impl<const NPOLES: usize, B: BSpline<NPOLES>, const RB: usize> Coefficients2d<NP
     }
 }
 
-impl<const NPOLES: usize, B: BSpline<NPOLES>, const CB: usize> Coefficients2d<NPOLES, B, 1, CB> {
+impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const CB: usize>
+    Coefficients2d<NPOLES, B, 1, CB>
+{
     #[inline(always)]
     /// set the row blocksize for calculation to this nonzero compile time value
     pub fn with_row_blocksize<const RB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
@@ -131,7 +137,7 @@ impl<const NPOLES: usize, B: BSpline<NPOLES>, const CB: usize> Coefficients2d<NP
     }
 }
 
-impl<const NPOLES: usize, B: BSpline<NPOLES>, const RB: usize, const CB: usize>
+impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB: usize>
     Coefficients2d<NPOLES, B, RB, CB>
 {
     #[inline(always)]
@@ -149,7 +155,7 @@ impl<const NPOLES: usize, B: BSpline<NPOLES>, const RB: usize, const CB: usize>
     ) -> Result<(), Error>
     where
         B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-        B: BSpline<NPOLES>,
+        B: BSplinePrefilter<NPOLES>,
     {
         super::coefficients2d_blocked::<_, _, RB, CB>(
             self.bspline,

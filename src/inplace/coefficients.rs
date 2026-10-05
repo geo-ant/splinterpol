@@ -5,7 +5,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 use crate::Error;
 use crate::{
     TransmittableBoundaryExtension,
-    bspline::BSpline,
+    bspline::BSplinePrefilter,
     internal::compute_truncation_indices,
     iter_utils::{BlockedStridedSliceMut, StridedSliceMut},
     numerics::{FloatVector, FusedMuladd},
@@ -21,7 +21,7 @@ pub fn coefficients2d<B, const NPOLES: usize>(
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    B: BSpline<NPOLES>,
+    B: BSplinePrefilter<NPOLES>,
 {
     coefficients2d_blocked::<B, NPOLES, 1, 1>(
         _bspline,
@@ -48,7 +48,7 @@ pub fn coefficients2d_blocked<
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum,
-    B: BSpline<NPOLES>,
+    B: BSplinePrefilter<NPOLES>,
 {
     const { assert!(COL_BLOCKSIZE >= 1) };
     let expected_len = match width.overflowing_mul(height) {

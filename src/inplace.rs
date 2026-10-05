@@ -6,9 +6,12 @@ mod test;
 /// to call.
 mod builder;
 
+/// contains the logic for coefficient calculation in-place
 pub(crate) mod coefficients;
 
-pub use coefficients::coefficients2d;
-pub use coefficients::coefficients2d_blocked;
+/// interpolation logic... duh
+pub(crate) mod interpolation;
 
 pub use builder::Coefficients2d;
+pub use coefficients::coefficients2d;
+pub use coefficients::coefficients2d_blocked;

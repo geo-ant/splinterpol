@@ -1,4 +1,4 @@
-use crate::bspline::{BSpline, BSpline10, BSpline11};
+use crate::bspline::{BSplinePrefilter, BSpline10, BSpline11};
 use crate::{bspline::BSpline3, internal::compute_truncation_indices};
 
 #[test]

@@ -5,15 +5,10 @@ use num_traits::Float;
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
-pub trait BSpline<const NPOLES: usize>: Copy + Default {
-    /// Floating point type with which the calculations for this spline type
-    /// can be performed
+pub trait BSplinePrefilter<const NPOLES: usize>: Copy + Default {
+    /// Floating point type for computations
     type Float: num_traits::Float;
-    // it would be nice if we could also do this for the associated constants, but...
-    // see below.
-    // number of poles of the b-spline
-    // const NPOLES: usize;
-    // normalization constant required for coefficient calculations
+    /// normalization constant for coefficient computation
     const NORMALIZATION: Self::Float;
     // we can't fucking do this because
     // "generic parameters may not be used in const expressions"
@@ -23,7 +18,7 @@ pub trait BSpline<const NPOLES: usize>: Copy + Default {
     // it wouldn't make any sense to implement this trait twice.
     // const NPOLES: usize;
     // const POLES: [T; Self::NPOLES];
-    /// returns the slice of poles, which must be of length npoles
+    /// the poles of the BSpline
     const POLES: [Self::Float; NPOLES];
 }
 
@@ -43,7 +38,7 @@ impl<T: Float> Default for BSpline3<T> {
     }
 }
 
-impl BSpline<1> for BSpline3<f32> {
+impl BSplinePrefilter<1> for BSpline3<f32> {
     type Float = f32;
     const NORMALIZATION: f32 = 1.;
     const POLES: [f32; 1] = [-0.2679491924311227 as _];
@@ -58,7 +53,7 @@ impl<T: Float> BSpline3<T> {
     }
 }
 
-impl BSpline<1> for BSpline3<f64> {
+impl BSplinePrefilter<1> for BSpline3<f64> {
     type Float = f64;
     const NORMALIZATION: f64 = 1.;
     const POLES: [f64; 1] = [-0.2679491924311227 as _];
@@ -70,7 +65,7 @@ pub struct BSpline10<T> {
     phantom: PhantomData<T>,
 }
 
-impl BSpline<5> for BSpline10<f64> {
+impl BSplinePrefilter<5> for BSpline10<f64> {
     type Float = f64;
     const NORMALIZATION: f64 = 1024.;
 
@@ -83,7 +78,7 @@ impl BSpline<5> for BSpline10<f64> {
     ];
 }
 
-impl BSpline<5> for BSpline10<f32> {
+impl BSplinePrefilter<5> for BSpline10<f32> {
     type Float = f32;
     const NORMALIZATION: f32 = 1024.;
 
@@ -102,7 +97,7 @@ pub struct BSpline11<T> {
     phantom: PhantomData<T>,
 }
 
-impl BSpline<5> for BSpline11<f64> {
+impl BSplinePrefilter<5> for BSpline11<f64> {
     type Float = f64;
     const NORMALIZATION: f64 = 1.;
     const POLES: [f64; 5] = [
@@ -114,7 +109,7 @@ impl BSpline<5> for BSpline11<f64> {
     ];
 }
 
-impl BSpline<5> for BSpline11<f32> {
+impl BSplinePrefilter<5> for BSpline11<f32> {
     type Float = f32;
     const NORMALIZATION: f32 = 1.;
     const POLES: [f32; 5] = [
@@ -155,8 +150,8 @@ mod test_util {
 // bspline structs! That's why I'm writing it like this already
 #[cfg(test)]
 mod comptime_test_bspline3 {
-    use super::BSpline;
     use super::BSpline3;
+    use super::BSplinePrefilter;
     use super::test_util::array_eq;
     const ASSRT: () = assert!(array_eq(BSpline3::<f32>::POLES, BSpline3::<f64>::POLES));
 
@@ -168,8 +163,8 @@ mod comptime_test_bspline3 {
 
 #[cfg(test)]
 mod comptime_test_bspline11 {
-    use super::BSpline;
     use super::BSpline11;
+    use super::BSplinePrefilter;
     use super::test_util::array_eq;
     const ASSRT: () = assert!(array_eq(BSpline11::<f32>::POLES, BSpline11::<f64>::POLES));
 
