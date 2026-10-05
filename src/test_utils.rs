@@ -1,5 +1,22 @@
 use std::path::Path;
 
+/// compare a f32 and a f64 array for equality in a way that can
+/// be evaluated at compile time.
+pub const fn array_f32_f64_eq<const N: usize>(lhs: [f32; N], rhs: [f64; N]) -> bool {
+    // can't use for loops in const functions... cause of reasons I guess.
+    let mut j = 0;
+    loop {
+        if j >= N {
+            break;
+        }
+        if lhs[j] != rhs[j] as f32 {
+            return false;
+        }
+        j += 1;
+    }
+    true
+}
+
 #[macro_export]
 // utility macro for parametrizing a test with different instantiations
 // of a single const-generic parameter.

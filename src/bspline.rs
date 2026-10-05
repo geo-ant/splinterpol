@@ -125,24 +125,6 @@ impl BSplinePrefilter<5> for BSpline11<f32> {
 /// be macro-generated) tests for the poles.
 // TODO: actually, remove this once I use macros, because this won't matter
 // anymore...
-#[cfg(test)]
-mod test_util {
-    /// compare a f32 and a f64 array for equality
-    pub const fn array_eq<const N: usize>(lhs: [f32; N], rhs: [f64; N]) -> bool {
-        // can't use for loops in const functions... cause of reasons I guess.
-        let mut j = 0;
-        loop {
-            if j >= N {
-                break;
-            }
-            if lhs[j] != rhs[j] as f32 {
-                return false;
-            }
-            j += 1;
-        }
-        true
-    }
-}
 
 // utility function to make sure that f32 and f64 arrays have the same contents
 // at compile time
@@ -152,8 +134,11 @@ mod test_util {
 mod comptime_test_bspline3 {
     use super::BSpline3;
     use super::BSplinePrefilter;
-    use super::test_util::array_eq;
-    const ASSRT: () = assert!(array_eq(BSpline3::<f32>::POLES, BSpline3::<f64>::POLES));
+    use crate::test_utils::array_f32_f64_eq;
+    const ASSRT: () = assert!(array_f32_f64_eq(
+        BSpline3::<f32>::POLES,
+        BSpline3::<f64>::POLES
+    ));
 
     #[test]
     fn bspline3_poles() {
@@ -165,8 +150,11 @@ mod comptime_test_bspline3 {
 mod comptime_test_bspline11 {
     use super::BSpline11;
     use super::BSplinePrefilter;
-    use super::test_util::array_eq;
-    const ASSRT: () = assert!(array_eq(BSpline11::<f32>::POLES, BSpline11::<f64>::POLES));
+    use crate::test_utils::array_f32_f64_eq;
+    const ASSRT: () = assert!(array_f32_f64_eq(
+        BSpline11::<f32>::POLES,
+        BSpline11::<f64>::POLES
+    ));
 
     #[test]
     fn bspline11_poles() {
