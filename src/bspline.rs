@@ -12,6 +12,14 @@ use num_traits::Float;
 // B-Spline, but I can't do that in current rust. It would
 // just make the interpolation and coefficient calculation function
 // signatures more annoying, so I've decided to simply split this.
+// In a perfect world, we would only have one trait with an
+// _associated constant_ DEGREE and then NPOLES = floor(DEGREE/2) and
+// NWEIGHTS = DEGREE+1 could be the array dimensions of the returned
+// poles and weights, but we can't use DEGREE/2 or DEGREE+1 as array
+// boundaries. This is doubly true if DEGREE was an associated constant,
+// cause todays Rust wouldn't even allow using DEGREE as the number of
+// elements in an array. But even if we made the BSpline trait generic over
+// DEGREE, then we still can't use DEGREE/2 or DEGREE+1 as array counts.
 
 /// logic and traits that are used for coefficient calculation
 /// (aka prefiltering)
