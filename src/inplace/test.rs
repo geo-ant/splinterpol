@@ -1,6 +1,6 @@
 use crate::{
     bspline::*,
-    inplace::{Coefficients2d, anticausal_blocked},
+    inplace::{Coefficients2d, coefficients::anticausal_blocked},
 };
 use float_cmp::assert_approx_eq;
 use std::num::NonZero;
@@ -9,8 +9,9 @@ use crate::{
     TransmittableBoundaryExtension,
     bspline::{BSpline3, BSpline10},
     inplace::{
-        apply_exponential_filter_in_place_1d, apply_exponential_filter_in_place_1d_iter,
-        causal_blocked, coefficients2d, coefficients2d_blocked,
+        coefficients::apply_exponential_filter_in_place_1d,
+        coefficients::apply_exponential_filter_in_place_1d_iter, coefficients::causal_blocked,
+        coefficients2d, coefficients2d_blocked,
     },
     iter_utils::StridedSliceMut,
     parametrized_test,

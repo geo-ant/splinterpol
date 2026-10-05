@@ -112,7 +112,7 @@ pub fn blocked_expf64_strided_iter(
     )
     .ok_or(Error::Dimensions)?;
     // inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
-    inplace::apply_exponential_filter_in_place_1d_iter_vector(
+    inplace::coefficients::apply_exponential_filter_in_place_1d_iter_vector(
         alpha,
         col,
         truncation_idx,
@@ -150,7 +150,7 @@ pub fn expf64_strided_iter(
     )
     .ok_or(Error::Dimensions)?;
     // inplace::apply_exponential_filter_in_place_1d(alpha, signal, truncation_idx, boundary_extension)
-    inplace::apply_exponential_filter_in_place_1d_iter(
+    inplace::coefficients::apply_exponential_filter_in_place_1d_iter(
         alpha,
         col,
         truncation_idx,
