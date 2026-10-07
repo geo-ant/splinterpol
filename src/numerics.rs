@@ -13,11 +13,13 @@ pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar> {
     fn scal(self, factor: Self::Scalar) -> Self;
     /// vector subtraction: `self`-`subtrahend`
     fn sub(self, subtrahend: Self) -> Self;
+    /// calculate the dot product
+    fn dot(self, other: Self) -> Self::Scalar;
 }
 
 impl<const N: usize, T> FloatVector for [T; N]
 where
-    T: num_traits::Float,
+    T: num_traits::Float + num_traits::ConstZero,
 {
     type Scalar = T;
 
@@ -43,6 +45,26 @@ where
             self[j] = self[j] - subtrahend[j];
         }
         self
+    }
+
+    #[inline(always)]
+    fn dot(self, other: Self) -> Self::Scalar {
+        // TODO PERF: see if there's a better way to group the terms to use
+        // muladds like so:
+        // v^T w = v[0] w[0] + v[1] w[1] + v[2] w[2] + v[3] w[3] + ...
+        // could be written as
+        // v[0].fmuladd(w[0], v[1] w[1]) + v[2].fmuladd(w[2], v[3] w[3]) + ...
+        // This is for example how interpn does it for dot4:
+        // see https://github.com/jlogan03/interpn/blob/main/src/interp_math.rs
+        // but some care has to be taken whether the terms are even or odd
+
+        // TODO PERF: this is NOT OPTIMAL DESPITE the muladd because we
+        // still have a dependency from one element to the next
+        let mut sum = T::ZERO;
+        for j in 0..N {
+            sum = self[j].fmuladd(other[j], sum);
+        }
+        sum
     }
 }
 
