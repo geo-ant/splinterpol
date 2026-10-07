@@ -57,6 +57,8 @@ pub enum Error {
     Overflow,
     /// precision set to a unreasonably small (or forbidden) value
     Precision,
+    /// given number is unrepresentable as a floating point value
+    UnrepresentableAsFloat,
 }
 
 /// Describes a way to extend the signal beyond the measured domain in a way
