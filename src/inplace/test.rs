@@ -6,8 +6,8 @@ use float_cmp::assert_approx_eq;
 use std::num::NonZero;
 
 use crate::{
-    TransmittableBoundaryExtension,
     bspline::{BSpline3, BSpline10},
+    inplace::TransmittableBoundaryExtension,
     inplace::{
         coefficients::apply_exponential_filter_in_place_1d,
         coefficients::apply_exponential_filter_in_place_1d_iter, coefficients::causal_blocked,

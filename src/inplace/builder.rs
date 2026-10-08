@@ -1,5 +1,6 @@
 use crate::{
-    Error, TransmittableBoundaryExtension, bspline::BSplinePrefilter, numerics::FusedMuladd,
+    Error, bspline::BSplinePrefilter, inplace::TransmittableBoundaryExtension,
+    numerics::FusedMuladd,
 };
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
@@ -24,7 +25,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// # let epsilon = 1e-1;
 /// # let width = 9;
 /// # let height = 10;
-/// # let extension = spleen::TransmittableBoundaryExtension::Periodic;
+/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
@@ -63,7 +64,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// # let epsilon = 1e-1;
 /// # let width = 9;
 /// # let height = 10;
-/// # let extension = spleen::TransmittableBoundaryExtension::Periodic;
+/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///

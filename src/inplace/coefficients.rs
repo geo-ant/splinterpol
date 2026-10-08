@@ -4,8 +4,8 @@ use num_traits::{ConstOne, ConstZero, Float};
 
 use crate::Error;
 use crate::{
-    TransmittableBoundaryExtension,
     bspline::BSplinePrefilter,
+    inplace::TransmittableBoundaryExtension,
     internal::compute_truncation_indices,
     iter_utils::{BlockedStridedSliceMut, StridedSliceMut},
     numerics::{FloatVector, FusedMuladd},

@@ -18,7 +18,7 @@ where
         return Err(Error::Precision);
     }
 
-    let rhon = compute_rhon(poles.into_iter().copied());
+    let rhon = compute_rhon(poles.iter().copied());
     let mu = compute_mus(poles);
     // NOTE that in section 5.1 in the B&M paper, the authors say that they
     // use the truncation index from eqn (51) but with a modified \epsilon'

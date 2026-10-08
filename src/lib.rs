@@ -30,6 +30,7 @@ pub mod inplace;
 
 mod internal;
 mod iter_utils;
+mod util;
 
 /// B-splines for interpolation
 pub mod bspline;
@@ -61,22 +62,6 @@ pub enum Error {
     UnrepresentableAsFloat,
 }
 
-/// Describes a way to extend the signal beyond the measured domain in a way
-/// that can be _transmitted_ like described in section 3.2.2 of the
-/// Briand & Monasse paper (cf also Algorithm 5 therein). Note that constant
-/// extension can _not_ be written as a transmittable boundary condition.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-#[repr(u8)]
-pub enum TransmittableBoundaryExtension {
-    /// Signal `abcde` is extended to `...cba|abcde|edc` and is called
-    /// _half-symmetric_ in the Briand & Monasse paper.
-    Mirrored = 1,
-    /// Signal `abcde` is extended to `...dcb|abcde|dcb...`
-    WholeSymmetric = 2,
-    /// Signal `abcde` is extended to `...cde|abcde|abc...`
-    Periodic = 3,
-}
-
 /// re-export some dependencies with significance for the public interface
 /// to this crate
 pub mod reexports {
@@ -102,7 +87,7 @@ pub fn blocked_expf64_strided_iter(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: inplace::TransmittableBoundaryExtension,
 ) -> Result<(), Error> {
     let col = iter_utils::BlockedStridedSliceMut::<8, f64>::new(
         signal,
@@ -140,7 +125,7 @@ pub fn expf64_strided_iter(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: inplace::TransmittableBoundaryExtension,
 ) -> Result<(), Error> {
     let col = iter_utils::StridedSliceMut::new(
         signal,

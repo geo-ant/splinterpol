@@ -12,6 +12,10 @@ pub(crate) mod coefficients;
 /// interpolation logic... duh
 pub(crate) mod interpolation;
 
+pub mod boundary;
+
+pub use boundary::TransmittableBoundaryExtension;
 pub use builder::Coefficients2d;
 pub use coefficients::coefficients2d;
 pub use coefficients::coefficients2d_blocked;
+pub use interpolation::interp2d_single;
