@@ -18,13 +18,7 @@ where
         return Err(Error::Precision);
     }
 
-    debug_assert!(
-        poles
-            .iter()
-            .all(|pole| { *pole < F::ZERO && *pole > -F::ONE && pole.is_finite() })
-    );
-
-    let rhon = compute_rhon(poles);
+    let rhon = compute_rhon(poles.into_iter().copied());
     let mu = compute_mus(poles);
     // NOTE that in section 5.1 in the B&M paper, the authors say that they
     // use the truncation index from eqn (51) but with a modified \epsilon'
@@ -51,18 +45,19 @@ where
 // NOTE: I wish we had const fn in traits, because the compute_rhon and compute_mu
 // functions could be comptime in theory...
 #[inline(always)]
-fn compute_rhon<F>(poles: &[F]) -> F
+fn compute_rhon<F, I>(poles: I) -> F
 where
     F: Float + ConstOne + ConstZero,
+    I: Iterator<Item = F> + Clone,
 {
     debug_assert!(
         poles
-            .iter()
-            .all(|pole| { *pole < F::ZERO && *pole > -F::ONE && pole.is_finite() }),
+            .clone()
+            .all(|pole| { pole < F::ZERO && pole > -F::ONE && pole.is_finite() }),
         "poles must be in (-1,0)"
     );
 
-    let prod = poles.iter().copied().fold(F::ONE, |prod, zj| {
+    let prod = poles.fold(F::ONE, |prod, zj| {
         let factor = (F::ONE + zj) / (F::ONE - zj);
         prod * factor
     });
