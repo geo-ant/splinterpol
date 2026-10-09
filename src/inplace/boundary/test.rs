@@ -1,7 +1,7 @@
 use crate::inplace::TransmittableBoundaryExtension;
 
 #[test]
-fn extensions_produce_reference_results() {
+fn extensions_produce_reference_results_for_n_ge_2() {
     // we have to use n=2 as the start because the reference impl has a bug for
     // n = 1 in the whole sym extension
     for n in [2, 1000, 100000] {
@@ -13,6 +13,9 @@ fn extensions_produce_reference_results() {
                 actual.try_into().unwrap(),
                 "half sym extension does not match"
             );
+            // this is to make sure that the output is in [0,n)
+            // which is something that the downstream implementations rely on
+            assert!((0..n).contains(&actual));
 
             let actual = TransmittableBoundaryExtension::WholeSymmetric.extended_index(idx, n);
             let expected = reference::whole_sym_ext(n as _, idx as _);
@@ -21,6 +24,7 @@ fn extensions_produce_reference_results() {
                 actual.try_into().unwrap(),
                 "half sym extension does not match"
             );
+            assert!((0..n).contains(&actual));
 
             let actual = TransmittableBoundaryExtension::Periodic.extended_index(idx, n);
             let expected = reference::periodic_ext(n as _, idx as _);
@@ -29,7 +33,25 @@ fn extensions_produce_reference_results() {
                 actual.try_into().unwrap(),
                 "half sym extension does not match"
             );
+            assert!((0..n).contains(&actual));
         }
+    }
+}
+
+#[test]
+fn extension_produces_the_only_array_index_for_n1() {
+    // we have to use n=2 as the start because the reference impl has a bug for
+    // n = 1 in the whole sym extension
+    let n = 1;
+    for idx in -(10 * n as isize)..(10 * n as isize) {
+        let index = TransmittableBoundaryExtension::Mirrored.extended_index(idx, n);
+        assert_eq!(index, 0);
+
+        let index = TransmittableBoundaryExtension::WholeSymmetric.extended_index(idx, n);
+        assert_eq!(index, 0);
+
+        let index = TransmittableBoundaryExtension::Periodic.extended_index(idx, n);
+        assert_eq!(index, 0);
     }
 }
 

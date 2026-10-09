@@ -20,7 +20,7 @@ pub enum TransmittableBoundaryExtension {
 impl TransmittableBoundaryExtension {
     #[inline]
     pub(crate) fn extended_index(self, idx: isize, n: usize) -> usize {
-        assert!(n > 0);
+        debug_assert!(n > 0, "logic error: index extension for zero length row");
 
         //TODO PERF: the reference code uses repeated subtraction, which might
         // be the smarter choice compared to modulo, since likely there's only
