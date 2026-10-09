@@ -58,8 +58,9 @@ pub enum Error {
     Overflow,
     /// precision set to a unreasonably small (or forbidden) value
     Precision,
-    /// given number is unrepresentable as a floating point value
-    UnrepresentableAsFloat,
+    /// given number is unrepresentable as a float or integer in the
+    /// current number type
+    UnrepresentableNumerically,
 }
 
 /// re-export some dependencies with significance for the public interface
