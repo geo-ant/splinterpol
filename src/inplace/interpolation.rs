@@ -36,9 +36,12 @@ where
     });
 
     let mut sum = [B::Float::ZERO; NW];
-    for (r_j, wy_j) in row_indices.into_iter().zip(wy) {
+    for j in 0..NW {
+        let r_j = row_indices[j];
+        let wy_j = wy[j];
+        let start = width * r_j;
         let row = coeffs
-            .get(width * r_j..width * (r_j + 1))
+            .get(start..start.wrapping_add(width))
             .ok_or(Error::OutOfBounds)?;
         let coeffs = get_row_patch::<NW, _>(row, ix, boundary_extension);
         sum = coeffs.axpy(wy_j, sum);
