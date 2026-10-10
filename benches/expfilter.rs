@@ -1,13 +1,15 @@
 use core::num::NonZero;
 use core::ops::Range;
-use criterion::{Criterion, criterion_group, criterion_main};
+use criterion::{BenchmarkGroup, BenchmarkId, Criterion, criterion_group, criterion_main};
 use num_traits::{Float, FromPrimitive};
 use rand::{
     RngExt, SeedableRng,
     distr::uniform::{SampleRange, SampleUniform},
     rngs::{ThreadRng, Xoshiro256PlusPlus},
 };
-use spleen::bench_exports::apply_exponential_filter_in_place;
+use spleen::{
+    bench_exports::apply_exponential_filter_in_place, inplace::TransmittableBoundaryExtension,
+};
 
 fn make_random_data<F: Float + FromPrimitive + SampleUniform>(
     len: usize,
@@ -28,29 +30,59 @@ where
 }
 
 fn bench_exponential_filter(c: &mut Criterion) {
+    let sizes = [100, 128, 1000, 1024, 10000, 16384, 60000, 65536];
+    let alpha = -0.28;
     // pristine source data; each iteration filters a fresh copy so we always
     // measure filtering the same unfiltered input (not re-filtering smoothed data)
-    let data = make_random_data(65535, -100f64..100f64, Some(12345678910));
+    let data = make_random_data(
+        sizes.iter().max().copied().unwrap(),
+        -100f64..100f64,
+        Some(12345678910),
+    );
 
-    let alpha = -0.28;
-    c.bench_function("foo", move |b| {
-        let data_len = data.len();
-        b.iter_batched(
-            // setup: produce a fresh, unfiltered copy (not timed)
-            || data.clone(),
-            // routine: filter the fresh copy (timed)
-            |mut fresh| {
-                apply_exponential_filter_in_place(
-                    alpha,
-                    &mut fresh,
-                    1000,
-                    spleen::TransmittableBoundaryExtension::Periodic,
-                )
-                .unwrap()
-            },
-            criterion::BatchSize::LargeInput,
-        )
-    });
+    let mut group = c.benchmark_group("exp-filter");
+
+    for size in sizes {
+        group
+            .bench_with_input(BenchmarkId::new("unblocked", size), &data, |b, data| {
+                b.iter_batched(
+                    || data[0..size].to_vec(),
+                    |mut data| {
+                        let len = data.len();
+                        apply_exponential_filter_in_place::<_, 1>(
+                            std::hint::black_box(alpha),
+                            data.as_mut_slice(),
+                            len / 5,
+                            TransmittableBoundaryExtension::Periodic,
+                        )
+                        .unwrap();
+                        std::hint::black_box(data)
+                    },
+                    criterion::BatchSize::LargeInput,
+                );
+            })
+            .throughput(criterion::Throughput::Elements(size as _));
+
+        group
+            .bench_with_input(BenchmarkId::new("blocked-8", size), &data, |b, data| {
+                b.iter_batched(
+                    || data[0..size].to_vec(),
+                    |mut data| {
+                        let len = data.len();
+                        apply_exponential_filter_in_place::<_, 8>(
+                            std::hint::black_box(alpha),
+                            data.as_mut_slice(),
+                            len / 5,
+                            TransmittableBoundaryExtension::Periodic,
+                        )
+                        .unwrap();
+                        std::hint::black_box(data)
+                    },
+                    criterion::BatchSize::LargeInput,
+                );
+            })
+            .throughput(criterion::Throughput::Elements(size as _));
+    }
 }
 
 criterion_group!(benches, bench_exponential_filter);

@@ -1,9 +1,33 @@
 use crate::{
-    Error, bspline::BSplinePrefilter, inplace::TransmittableBoundaryExtension,
+    Error,
+    bspline::BSplinePrefilter,
+    inplace::{TransmittableBoundaryExtension, coefficients2d_blocked},
     numerics::FusedMuladd,
 };
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct SplineInterpolator2d<'a, F, B> {
+    coeffs: &'a [F],
+    width: usize,
+    height: usize,
+    bspline: B,
+}
+
+impl<'a, F, B> SplineInterpolator2d<'a, F, B> {
+    pub fn from_image<const NPOLES: usize>(
+        bspline: B,
+        data: &'a mut [F],
+        (width, height): (usize, usize),
+        boundary_extension: TransmittableBoundaryExtension,
+    ) -> Result<Self, Error>
+    where
+        B: BSplinePrefilter<NPOLES, Float = F>,
+    {
+        todo!()
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 /// This is purely a convenience type that acts as a builder to make the
