@@ -1,63 +1,138 @@
 use crate::{
     Error,
     bspline::{BSplinePrefilter, BSplineWeights},
-    inplace::{TransmittableBoundaryExtension, coefficients2d_blocked, interp2d_single},
+    inplace::{TransmittableBoundaryExtension, interp2d_single},
     numerics::FusedMuladd,
 };
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
+#[derive(Copy, Clone, PartialEq, Eq)]
+pub struct RowMajor<C> {
+    pub data: C,
+    pub width: usize,
+    pub height: usize,
+}
+
+impl<C> core::fmt::Debug for RowMajor<C> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("RowMajor")
+            .field("width", &self.width)
+            .field("height", &self.height)
+            .finish_non_exhaustive()
+    }
+}
+
+impl<T, C> AsRef<[T]> for RowMajor<C>
+where
+    C: AsRef<[T]>,
+{
+    fn as_ref(&self) -> &[T] {
+        self.data.as_ref()
+    }
+}
+
+impl<T, C> AsMut<[T]> for RowMajor<C>
+where
+    C: AsMut<[T]>,
+{
+    fn as_mut(&mut self) -> &mut [T] {
+        self.data.as_mut()
+    }
+}
+
+impl<C> RowMajor<C> {
+    /// just a convenience implementation to get a value the given 2D index,
+    /// don't rely on this for high performance computations
+    #[inline]
+    pub fn at<T>(&self, row: usize, col: usize) -> &T
+    where
+        C: AsRef<[T]>,
+    {
+        &self.data.as_ref()[row * self.width + col]
+    }
+}
+
 #[derive(Clone, PartialEq, Debug)]
-pub struct SplineInterpolator2d<'a, F, B> {
-    coeffs2d: &'a [F],
-    width: usize,
-    height: usize,
+pub struct SplineInterpolator2d<B, C> {
+    // NOTE(geo) this guy uses owned containers because forcing a slice here
+    // creates a mildly (but not totally, but enough for me to change it)
+    // API when creating an instance of an interpolator, see
+    // https://doc.rust-lang.org/nomicon/lifetime-mismatch.html
+    // That would mean that we'd have to accept a mutable borrow to the input
+    // but we want to return a shared borrow to the input on exit. That works
+    // and we could create shared references to the data through this type,
+    // but it would make the mutable borrow to the input stay alive as long
+    // as this type lives which could create surprises to downstream users.
+    coeffs: RowMajor<C>,
     bspline: B,
     boundary_extension: TransmittableBoundaryExtension,
 }
 
-impl<'a, F, B> SplineInterpolator2d<'a, F, B> {
+impl<B, C> SplineInterpolator2d<B, C> {
     pub fn from_image<const NPOLES: usize>(
         bspline: B,
-        image_data: &'a mut [F],
-        (width, height): (usize, usize),
+        image_data: RowMajor<C>,
         boundary_extension: TransmittableBoundaryExtension,
-        epsilon: F,
+        epsilon: B::Float,
     ) -> Result<Self, Error>
     where
-        B: BSplinePrefilter<NPOLES, Float = F>,
-        F: Float + ConstOne + ConstZero + Sum,
+        C: AsMut<[B::Float]>,
+        B: BSplinePrefilter<NPOLES>,
+        B::Float: Float + ConstOne + ConstZero + Sum,
     {
+        let RowMajor {
+            mut data,
+            width,
+            height,
+        } = image_data;
         crate::inplace::coefficients2d_blocked::<_, _, 1, 1>(
             bspline,
-            image_data,
+            data.as_mut(),
             width,
             height,
             epsilon,
             boundary_extension,
         )?;
         Ok(Self {
-            coeffs2d: image_data,
-            width,
-            height,
+            coeffs: RowMajor {
+                data,
+                width,
+                height,
+            },
             bspline,
             boundary_extension,
         })
     }
 
-    pub fn interp_single<const NWEIGHTS: usize>(&self, (row, col): (F, F)) -> Result<F, Error>
+    pub fn interp_single<const NWEIGHTS: usize>(
+        &self,
+        row: B::Float,
+        col: B::Float,
+    ) -> Result<B::Float, Error>
     where
-        B: BSplineWeights<NWEIGHTS, Float = F>,
-        F: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+        C: AsRef<[B::Float]>,
+        B: BSplineWeights<NWEIGHTS>,
+        B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
     {
+        let width = self.coeffs.width;
+        let height = self.coeffs.height;
         interp2d_single(
             self.bspline,
-            self.coeffs2d,
-            self.width,
-            self.height,
+            self.coeffs.as_ref(),
+            width,
+            height,
             self.boundary_extension,
             (row, col),
         )
+    }
+}
+
+impl<C, B> SplineInterpolator2d<B, C> {
+    /// consumes the interpolator and returns the calculated
+    /// B-Spline coefficients in row major fashion
+    pub fn coefficients(self) -> RowMajor<C> {
+        self.coeffs
     }
 }
 

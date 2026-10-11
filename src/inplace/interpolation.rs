@@ -3,6 +3,9 @@ use crate::{
 };
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
+#[cfg(test)]
+mod test;
+
 #[inline]
 pub fn interp2d_single<const NW: usize, B>(
     bspline: B,
