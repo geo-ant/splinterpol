@@ -2,6 +2,8 @@ use crate::{Error, inplace::TransmittableBoundaryExtension, numerics::FusedMulad
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
+pub use crate::internal::compute_truncation_indices;
+
 pub fn apply_exponential_filter_in_place<F, const BLOCKSIZE: usize>(
     // the pole, -1 < alpha < 0
     alpha: F,

@@ -1,31 +1,63 @@
 use crate::{
     Error,
-    bspline::BSplinePrefilter,
-    inplace::{TransmittableBoundaryExtension, coefficients2d_blocked},
+    bspline::{BSplinePrefilter, BSplineWeights},
+    inplace::{TransmittableBoundaryExtension, coefficients2d_blocked, interp2d_single},
     numerics::FusedMuladd,
 };
 use core::iter::Sum;
-use num_traits::{ConstOne, ConstZero, Float};
+use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct SplineInterpolator2d<'a, F, B> {
-    coeffs: &'a [F],
+    coeffs2d: &'a [F],
     width: usize,
     height: usize,
     bspline: B,
+    boundary_extension: TransmittableBoundaryExtension,
 }
 
 impl<'a, F, B> SplineInterpolator2d<'a, F, B> {
     pub fn from_image<const NPOLES: usize>(
         bspline: B,
-        data: &'a mut [F],
+        image_data: &'a mut [F],
         (width, height): (usize, usize),
         boundary_extension: TransmittableBoundaryExtension,
+        epsilon: F,
     ) -> Result<Self, Error>
     where
         B: BSplinePrefilter<NPOLES, Float = F>,
+        F: Float + ConstOne + ConstZero + Sum,
     {
-        todo!()
+        crate::inplace::coefficients2d_blocked::<_, _, 1, 1>(
+            bspline,
+            image_data,
+            width,
+            height,
+            epsilon,
+            boundary_extension,
+        )?;
+        Ok(Self {
+            coeffs2d: image_data,
+            width,
+            height,
+            bspline,
+            boundary_extension,
+        })
+    }
+
+    pub fn interp_single<const NWEIGHTS: usize>(&self, (row, col): (F, F)) -> Result<F, Error>
+    where
+        B: BSplineWeights<NWEIGHTS, Float = F>,
+        F: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+    {
+        interp2d_single(
+            self.bspline,
+            self.coeffs2d,
+            self.width,
+            self.height,
+            self.boundary_extension,
+            (row, col),
+        )
     }
 }
 
