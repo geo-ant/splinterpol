@@ -35,7 +35,7 @@ pub use weights::BSplineWeights;
 /// alias for the BSpline of order 3
 pub type CubicBSpline<T> = BSpline3<T>;
 
-/// BSpline of order 3
+/// BSpline of degree 3
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline3<T: Float> {
     phantom: PhantomData<T>,
@@ -57,13 +57,35 @@ impl<T: Float> BSpline3<T> {
     }
 }
 
-/// BSpline of order 10
+/// BSpline of degree 4
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline4<T> {
+    phantom: PhantomData<T>,
+}
+
+impl<T> Default for BSpline4<T> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> BSpline4<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
+}
+
+/// BSpline of degree 10
 #[derive(Default, Debug, Clone, Copy)]
 pub struct BSpline10<T> {
     phantom: PhantomData<T>,
 }
 
-/// B-spline of order 11
+/// B-spline of degree 11
 #[derive(Default, Debug, Clone, Copy)]
 pub struct BSpline11<T> {
     phantom: PhantomData<T>,

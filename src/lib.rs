@@ -15,9 +15,16 @@
     clippy::alloc_instead_of_core
 )]
 
+// the `no_std` feature isn't actually used in the code, but it has significance
+// for the dependency selection in the toml file. On `no_std` we use the `libm`
+// feature of the `num_traits` crate whereas on `std` we use the `std` feature
+// of that crate. Since `no_std` is a default feature of _this_ crate, we
+// can't simply pass `features = ["std"]` when adding this crate as a dependency
+// in a downstream `Cargo.toml` file. That's why we have to pass
+// `default-features=false` as well. Hope that clears things up.
 #[cfg(all(feature = "std", feature = "no_std"))]
 compile_error!(
-    "The `std` and `no_std` feature must not be used together. Use `default-features=false` and enable only the desired feature explicitly."
+    "The `std` and `no_std` feature must not be used together. Use `default-features=false` and enable the desired feature explicitly."
 );
 
 use core::num::NonZero;

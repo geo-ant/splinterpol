@@ -1,4 +1,4 @@
-use crate::bspline::{BSpline3, BSpline10, BSpline11};
+use crate::bspline::{BSpline3, BSpline4, BSpline10, BSpline11};
 
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
@@ -30,6 +30,20 @@ impl BSplinePrefilter<1> for BSpline3<f64> {
     type Float = f64;
     const NORMALIZATION: f64 = 1.;
     const POLES: [f64; 1] = [-0.2679491924311227 as _];
+}
+
+impl BSplinePrefilter<2> for BSpline4<f64> {
+    type Float = f64;
+    const NORMALIZATION: Self::Float = 16.;
+    // NOTE(geo): the poles in Briand & Monasse are _not correct_ for f64
+    // precision.
+    const POLES: [f64; 2] = [-0.36134122590022016, -0.013725429297339121];
+}
+
+impl BSplinePrefilter<2> for BSpline4<f32> {
+    type Float = f32;
+    const NORMALIZATION: Self::Float = 16.;
+    const POLES: [f32; 2] = [-0.36134122590022016, -0.013725429297339121];
 }
 
 impl BSplinePrefilter<5> for BSpline10<f64> {

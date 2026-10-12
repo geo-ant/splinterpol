@@ -1,4 +1,4 @@
-use crate::bspline::BSpline3;
+use crate::bspline::{BSpline3, BSpline4};
 use num_traits::{ConstOne, ConstZero, Float};
 
 // NOTE: why the stupid constant for the number of weights,
@@ -7,7 +7,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 pub trait BSplineWeights<const NWEIGHTS: usize>: Copy + Default {
     type Float: Float;
     fn eval(self, coord: Self::Float) -> Self::Float;
-    /// this must be exactly float(NWEIGTS)/2.0
+    /// this must be exactly `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
 }
 
@@ -36,5 +36,59 @@ where
     #[inline]
     fn radius() -> Self::Float {
         Self::Float::ONE + Self::Float::ONE
+    }
+}
+
+impl BSplineWeights<5> for BSpline4<f64> {
+    type Float = f64;
+
+    #[inline]
+    fn eval(self, coord: f64) -> f64 {
+        let mut x = coord.abs();
+        if x <= 0.5 {
+            x *= x;
+            14.375 + (-15. + 6. * x) * x
+        } else if x < 1.5 {
+            x = 1.5 - x;
+            1. + (4. + (6. + (4. - 4. * x) * x) * x) * x
+        } else if x < 2.5 {
+            x = 2.5 - x;
+            x *= x;
+            x * x
+        } else {
+            return 0.;
+        }
+    }
+
+    #[inline]
+    fn radius() -> Self::Float {
+        2.5
+    }
+}
+
+impl BSplineWeights<5> for BSpline4<f32> {
+    type Float = f32;
+
+    #[inline]
+    fn eval(self, coord: f32) -> f32 {
+        let mut x = coord.abs();
+        if x <= 0.5 {
+            x *= x;
+            14.375 + (-15. + 6. * x) * x
+        } else if x < 1.5 {
+            x = 1.5 - x;
+            1. + (4. + (6. + (4. - 4. * x) * x) * x) * x
+        } else if x < 2.5 {
+            x = 2.5 - x;
+            x *= x;
+            x * x
+        } else {
+            return 0.;
+        }
+    }
+
+    #[inline]
+    fn radius() -> Self::Float {
+        2.5
     }
 }
