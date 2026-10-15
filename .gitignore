@@ -26,3 +26,17 @@ target
 # Added by cargo
 
 /target
+
+# python stuff
+.venv/
+venv/
+env/
+
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
