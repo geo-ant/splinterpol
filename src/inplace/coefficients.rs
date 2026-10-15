@@ -39,7 +39,7 @@ pub fn coefficients2d_blocked<
     const ROW_BLOCKSIZE: usize,
     const COL_BLOCKSIZE: usize,
 >(
-    _bspline: B,
+    bspline: B,
     image_data: &mut [B::Float],
     width: usize,
     height: usize,
@@ -67,7 +67,9 @@ where
     // since the columns have massive stride typically,so a blocking strategy
     // is the way to go here in general
 
-    let truncation_indices = compute_truncation_indices(&B::POLES, epsilon)?;
+    let poles = B::poles();
+
+    let truncation_indices = compute_truncation_indices(&poles, epsilon)?;
 
     // column filtering
     // TODO: remove this horrible unsafe code. We should not have to do any of this
@@ -78,7 +80,7 @@ where
     // with manual indexing right away anyways, so let's see if we can get this
     // working and see how well it performs compared to the reference C impl
 
-    for (pole, truncation_index) in B::POLES
+    for (pole, truncation_index) in poles
         .iter()
         .copied()
         .zip(truncation_indices.iter().copied())
@@ -141,7 +143,7 @@ where
     }
 
     // row filtering
-    for (pole, truncation_index) in B::POLES
+    for (pole, truncation_index) in poles
         .iter()
         .copied()
         .zip(truncation_indices.iter().copied())
@@ -160,8 +162,8 @@ where
             })?;
     }
 
-    if B::NORMALIZATION != B::Float::ONE {
-        let normalization = B::NORMALIZATION.powi(2);
+    if B::normalization() != B::Float::ONE {
+        let normalization = B::normalization().powi(2);
         image_data
             .iter_mut()
             .for_each(|val| *val = *val * normalization);

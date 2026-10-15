@@ -80,13 +80,44 @@ impl<T> BSpline4<T> {
 }
 
 /// BSpline of degree 10
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct BSpline10<T> {
     phantom: PhantomData<T>,
 }
+impl<T> Default for BSpline10<T> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> BSpline10<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
+}
 
 /// B-spline of degree 11
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct BSpline11<T> {
     phantom: PhantomData<T>,
+}
+
+impl<T> Default for BSpline11<T> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> BSpline11<T> {
+    #[inline]
+    pub fn new() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
 }

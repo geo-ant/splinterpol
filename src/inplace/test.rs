@@ -991,7 +991,7 @@ fn blocked_causal_produces_correct_results<const BLOCKSIZE: usize>() {
         .enumerate()
         // if we don't clamp, the prologue will get unreasonably large
         // and lead to numerical errors
-        .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::POLES[0]))
+        .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::poles()[0]))
     {
         let expected = reference_causal(prologue, alpha, x);
         let actual = causal_blocked(*x, alpha, prologue);
@@ -1041,7 +1041,7 @@ parametrized_test! {
             .enumerate()
             // if we don't clamp, the prologue will get unreasonably large
             // and lead to numerical errors
-            .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::POLES[0]))
+            .map(|(idx, x)| ((idx as f64*0.1).clamp(min ,max), x, BSpline3::<f64>::poles()[0]))
         {
             let expected = reference_anticausal(epilogue, alpha, x);
             let actual = anticausal_blocked(*x, alpha, epilogue);
