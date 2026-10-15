@@ -1,5 +1,8 @@
-use crate::bspline::{BSpline3, BSpline4};
-use num_traits::{ConstOne, ConstZero, Float};
+use crate::{
+    bspline::{BSpline3, BSpline4},
+    numerics::FusedMuladd,
+};
+use num_traits::{AsPrimitive, ConstOne, ConstZero, Float};
 
 // NOTE: why the stupid constant for the number of weights,
 // even though the number of weights is defined by each degree only?
@@ -13,24 +16,27 @@ pub trait BSplineWeights<const NWEIGHTS: usize>: Copy + Default {
 
 impl<F> BSplineWeights<4> for BSpline3<F>
 where
-    F: Float + ConstOne + ConstZero,
+    F: Float + 'static + ConstOne + ConstZero,
+    f64: AsPrimitive<F>,
 {
     type Float = F;
 
     #[inline(always)]
     fn eval(self, x: F) -> F {
+        // generated this function with `python scripts/bspline-eval-function.py 3`
+        // and then did optimizations and cleanups by hand
         let x = x.abs();
-        let n2 = F::ONE + F::ONE;
-        let n3 = n2 + F::ONE;
-        let n4 = n2 + n2;
-        let n6 = n4 + n2;
         if x < F::ONE {
-            n4 + (-n6 + n3 * x) * x * x
-        } else if x < n2 {
-            (n2 - x).powi(3)
-        } else {
-            F::ZERO
+            let y = x;
+            return (y)
+                .powi(2)
+                .fmuladd(y.fmuladd(3.0.as_(), -6.0.as_()), 4.0.as_());
         }
+        if x < 2.0.as_() {
+            let y = (2.0.as_()) - x;
+            return (y).powi(3);
+        }
+        F::ZERO
     }
 
     #[inline]
@@ -39,56 +45,44 @@ where
     }
 }
 
-impl BSplineWeights<5> for BSpline4<f64> {
-    type Float = f64;
+impl<F> BSplineWeights<5> for BSpline4<F>
+where
+    F: Float + 'static + ConstOne + ConstZero,
+    f64: AsPrimitive<F>,
+{
+    type Float = F;
 
     #[inline]
-    fn eval(self, coord: f64) -> f64 {
-        let mut x = coord.abs();
-        if x <= 0.5 {
-            x *= x;
-            14.375 + (-15. + 6. * x) * x
-        } else if x < 1.5 {
-            x = 1.5 - x;
-            1. + (4. + (6. + (4. - 4. * x) * x) * x) * x
-        } else if x < 2.5 {
-            x = 2.5 - x;
-            x *= x;
-            x * x
-        } else {
-            return 0.;
+    fn eval(self, x: F) -> F {
+        // also created with the script and then had an llm apply the muladd.
+        // The muladd refactoring is very tedious but schematic because we
+        // can always go from inside to outside.
+        let x = x.abs();
+
+        if x < 0.5.as_() {
+            let x2 = x * x;
+            return x2.fmuladd(x2.fmuladd(6.0.as_(), (-15.0).as_()), 14.375.as_());
         }
+
+        if x < 1.5.as_() {
+            let y = 1.5.as_() - x;
+            let p = y.fmuladd((-4.0).as_(), 4.0.as_());
+            let p = y.fmuladd(p, 6.0.as_());
+            let p = y.fmuladd(p, 4.0.as_());
+            return y.fmuladd(p, F::ONE);
+        }
+
+        if x < 2.5.as_() {
+            let y = 2.5.as_() - x;
+            let y2 = y * y;
+            return y2 * y2;
+        }
+
+        F::ZERO
     }
 
     #[inline]
     fn radius() -> Self::Float {
-        2.5
-    }
-}
-
-impl BSplineWeights<5> for BSpline4<f32> {
-    type Float = f32;
-
-    #[inline]
-    fn eval(self, coord: f32) -> f32 {
-        let mut x = coord.abs();
-        if x <= 0.5 {
-            x *= x;
-            14.375 + (-15. + 6. * x) * x
-        } else if x < 1.5 {
-            x = 1.5 - x;
-            1. + (4. + (6. + (4. - 4. * x) * x) * x) * x
-        } else if x < 2.5 {
-            x = 2.5 - x;
-            x *= x;
-            x * x
-        } else {
-            return 0.;
-        }
-    }
-
-    #[inline]
-    fn radius() -> Self::Float {
-        2.5
+        2.5.as_()
     }
 }
