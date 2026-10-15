@@ -8,7 +8,7 @@ from fractions import Fraction as frac
 import sympy as sp
 
 # algorithm 9 in the B&M paper
-def compute_z_transform_coefficients(n: int) -> list[Fraction]:
+def compute_z_transform_coefficients(n: int) -> list[frac]:
 
     if n < 2:
         raise Exception("spline degree must be >= 2")
