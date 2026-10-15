@@ -3,9 +3,11 @@
 # The relevant section form the Briand & Monasse paper is 2.3
 
 import sympy as sp
+import sys
 from fractions import Fraction as frac
 from math import comb as n_over_k
 from dataclasses import dataclass
+from sympy.printing.rust import RustCodePrinter
 
 # compute C^(n)_{k,j} from eq. (32) in the paper. I don't care about
 # computational efficiency here, which is why I'm fine not using recursion
@@ -103,25 +105,91 @@ def compute_piecewise_betan(n: int) -> list[PolyPiece]:
 
     return pieces        
 
-def gen_rust_impl(poly_pieces: list[PolyPiece]):
+
+# heavily LLM assisted with the implementation here, my python
+# is too crappy for pretty printing rust code...
+class PolynomialRustPrinter(RustCodePrinter):
+    def _cast_to_float(self, expr):
+        # Avoid the stock printer's implicit casts and lost parentheses.
+        return expr
+
+    def _print_Integer(self, expr, _type=False):
+        # Polynomial coefficients must be floating-point literals.
+        return f"{int(expr)}.0"
+
+    def _print_Pow(self, expr):
+        # powi's exponent must remain an integer.
+        if not expr.exp.is_Integer:
+            raise ValueError("Expected an integer power")
+        return f"({self._print(expr.base)}).powi({int(expr.exp)})"
+
+    def _print_Rational(self, expr):
+        p, q = int(expr.p), int(expr.q)
+
+        if q & (q - 1):
+            raise ValueError("Expected a power-of-two denominator")
+
+        # q = 2**places, so p/q = (p * 5**places) / 10**places.
+        places = q.bit_length() - 1
+
+        if places == 0:
+            return f"{p}.0"
+
+        digits = str(abs(p) * 5**places).zfill(places + 1)
+        sign = "-" if p < 0 else ""
+
+        return f"{sign}{digits[:-places]}.{digits[-places:]}"
+
+# also lots of llm assistance because my python is too crappy here
+def gen_rust_impl(poly_pieces: list[PolyPiece]) -> str:
+    printer = PolynomialRustPrinter()
+    y = sp.Symbol("y")
+
+    lines = [
+        "pub fn beta(x: f64) -> f64 {",
+        "    let x = x.abs();",
+    ]
 
     for index, piece in enumerate(poly_pieces):
-        print(f"if x < {piece.upper_limit} {{")
+        bound = piece.upper_limit
+        limit = printer.doprint(
+            sp.Rational(bound.numerator, bound.denominator)
+        )
+
+        lines.append(f"    if x < {limit} {{")
+
         if index == 0:
-            # no substitution for this bit
-            print("let y = x;")
+            lines.append("        let y = x;")
         else:
-            print(f"let y = {piece.upper_limit} - x")
+            lines.append(f"        let y = ({limit}) - x;")
 
-    
-        print("TODO return poly eval")
+        # Ensure the polynomial variable is named y.
+        expr = piece.poly.as_expr().subs(piece.poly.gens[0], y)
+        horner = sp.horner(expr, y)
 
-    print("return 0.;")
+        temporaries, expressions = sp.cse(
+            horner, symbols=sp.numbered_symbols("tmp")
+        )
 
+        for name, value in temporaries:
+            lines.append(
+                f"        let {name}: f64 = {printer.doprint(value)};"
+            )
 
-poly_pieces = compute_piecewise_betan(3)
+        lines.append(
+            f"        return {printer.doprint(expressions[0])};"
+        )
+        lines.append("    }")
 
-print(poly_pieces)
+    lines.extend([
+        "    0.0",
+        "}",
+    ])
 
-print("foo")
+    return "\n".join(lines)
 
+if len(sys.argv) != 2:
+    sys.exit(f"Usage: python {sys.argv[0]} <spline degree>")
+
+n = int(sys.argv[1])
+print(gen_rust_impl(compute_piecewise_betan(n)))
