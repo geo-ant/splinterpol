@@ -74,9 +74,13 @@ def make_polynomial(coeff: list[Fraction]) -> sp.Poly:
 
 # absolute overkill
 SIGNIFICANT_DIGITS = 45
+MAX_DEGREE = 11
 
-for degree in range(2,12+1):
-    print(f"*** Poles for BSpline with Degree {degree} ***")
+print("#![allow(clippy::excessive_precision)]")
+print("/// *** AUTO GENERATED. DO NOT EDIT ***")
+print(f"/// Poles of B-Splines with degrees 2,...,{MAX_DEGREE}")
+print(f"/// auto-generated with scripts/calculate_poles.py\n\n")
+for degree in range(2,MAX_DEGREE+1):
     coeff = compute_z_transform_coefficients(degree)
     poly = make_polynomial(coeff)
     croots = sp.real_roots(poly)
@@ -85,6 +89,8 @@ for degree in range(2,12+1):
     # becomes available in the far future.
     roots = [root.evalf(SIGNIFICANT_DIGITS) for root in croots]
     poles = [root for root in roots if -1 < root < 0]
+    print(f"/// poles for B-Spline of degree {degree}")
+    print(f"pub const BSPLINE{degree}_POLES: [f64; {len(poles)}] = [")
     for pole in poles:
-        print(f"{pole:e}")
-    print("\n")
+        print(f"    {pole:e},")
+    print("];\n")

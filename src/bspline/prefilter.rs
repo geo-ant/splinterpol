@@ -1,5 +1,7 @@
 use crate::bspline::{BSpline3, BSpline4, BSpline10, BSpline11};
 
+mod poles;
+
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
