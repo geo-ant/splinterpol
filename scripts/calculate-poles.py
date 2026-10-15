@@ -1,7 +1,14 @@
+# a little utility script that can calculate the roots of the \tilde{B}^(n)(z)
+# polynomial in Briand and Monasse, appendix A.1 with arbitraty precision.
+# I could already observe (through failing tests) that the poles of the
+# BSpline of degree 4 are not correct within float64 precision in their reference
+# implementation.
+
 from fractions import Fraction as frac
+import sympy as sp
 
 # algorithm 9 in the B&M paper
-def compute_z_transform_coefficients(n: uint):
+def compute_z_transform_coefficients(n: int) -> list[Fraction]:
 
     if n < 2:
         raise Exception("spline degree must be >= 2")
@@ -52,5 +59,32 @@ def compute_z_transform_coefficients(n: uint):
         
     return coeff
 
-coeff = compute_z_transform_coefficients(5)
-print([str(c) for c in coeff])
+# build a sympy polynomial with rational coefficients from coeff[k]
+# such that y(x) = \sum_k coeff[k] x^k
+def make_polynomial(coeff: list[Fraction]) -> sp.Poly:
+    z = sp.Symbol("z")
+
+    expression = sum(
+        sp.Rational(c.numerator, c.denominator) * z**k
+        for k, c in enumerate(coeff)
+    )
+
+    return sp.Poly(expression, z, domain=sp.QQ)
+
+
+# absolute overkill
+SIGNIFICANT_DIGITS = 45
+
+for degree in range(2,12+1):
+    print(f"*** Poles for BSpline with Degree {degree} ***")
+    coeff = compute_z_transform_coefficients(degree)
+    poly = make_polynomial(coeff)
+    croots = sp.real_roots(poly)
+    # use many more significant digits than are needed or useful for float64
+    # just because we can... It should even be enough for float128 if that
+    # becomes available in the far future.
+    roots = [root.evalf(SIGNIFICANT_DIGITS) for root in croots]
+    poles = [root for root in roots if -1 < root < 0]
+    for pole in poles:
+        print(f"{pole:e}")
+    print("\n")
