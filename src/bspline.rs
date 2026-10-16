@@ -1,5 +1,4 @@
 #![allow(clippy::excessive_precision)]
-use core::marker::PhantomData;
 use num_traits::Float;
 
 // NOTE: All B-Splines in this crate implement both the trait
@@ -35,89 +34,65 @@ pub use weights::BSplineWeights;
 /// alias for the BSpline of order 3
 pub type CubicBSpline<T> = BSpline3<T>;
 
+/// BSpline of degree 2
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline2<T: Float> {
+    // NOTE(geo) due to limited rust generics, we have to put the number
+    // of poles in here, which must match the number of poles in the prefilter
+    // trait. This match will be enforced at compile time, so it's fine.
+    poles: [T; 1],
+}
+
 /// BSpline of degree 3
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline3<T: Float> {
-    phantom: PhantomData<T>,
-}
-
-impl<T: Float> Default for BSpline3<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T: Float> BSpline3<T> {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            phantom: Default::default(),
-        }
-    }
+    poles: [T; 1],
 }
 
 /// BSpline of degree 4
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline4<T> {
-    phantom: PhantomData<T>,
+    poles: [T; 2],
 }
 
-impl<T> Default for BSpline4<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
+/// BSpline of degree 5
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline5<T> {
+    poles: [T; 2],
 }
 
-impl<T> BSpline4<T> {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            phantom: Default::default(),
-        }
-    }
+/// BSpline of degree 6
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline6<T> {
+    poles: [T; 3],
+}
+
+/// BSpline of degree 7
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline7<T> {
+    poles: [T; 3],
+}
+
+/// BSpline of degree 8
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline8<T> {
+    poles: [T; 4],
+}
+
+/// BSpline of degree 9
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline9<T> {
+    poles: [T; 4],
 }
 
 /// BSpline of degree 10
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline10<T> {
-    phantom: PhantomData<T>,
-}
-impl<T> Default for BSpline10<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T> BSpline10<T> {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            phantom: Default::default(),
-        }
-    }
+    poles: [T; 5],
 }
 
 /// B-spline of degree 11
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline11<T> {
-    phantom: PhantomData<T>,
-}
-
-impl<T> Default for BSpline11<T> {
-    #[inline]
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<T> BSpline11<T> {
-    #[inline]
-    pub fn new() -> Self {
-        Self {
-            phantom: Default::default(),
-        }
-    }
+    poles: [T; 5],
 }

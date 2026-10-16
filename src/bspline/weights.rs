@@ -54,9 +54,14 @@ where
 
     #[inline]
     fn eval(self, x: F) -> F {
-        // also created with the script and then had an llm apply the muladd.
+        // NOTE(geo): also created with the script and then had an llm apply the muladd.
         // The muladd refactoring is very tedious but schematic because we
-        // can always go from inside to outside.
+        // can always go from inside to outside. The one thing we should consider
+        // is whether it makes sense to split the calculation into multiple
+        // dependency chains for larger calculations, which I don't think
+        // is neccessarily possible if we use the Horner rewrite for calculating
+        // the polynomials, which is what Briand & Monasse also do... gotta think
+        // about that.
         let x = x.abs();
 
         if x < 0.5.as_() {

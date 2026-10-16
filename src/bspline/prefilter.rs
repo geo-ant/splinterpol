@@ -1,8 +1,15 @@
-use crate::bspline::{
-    BSpline3, BSpline4, BSpline10, BSpline11,
-    prefilter::poles::{BSPLINE3_POLES, BSPLINE4_POLES, BSPLINE10_POLES, BSPLINE11_POLES},
+use crate::{
+    bspline::{
+        BSpline2, BSpline3, BSpline4, BSpline5, BSpline6, BSpline7, BSpline8, BSpline9, BSpline10,
+        BSpline11,
+        prefilter::poles::{
+            BSPLINE2_POLES, BSPLINE3_POLES, BSPLINE4_POLES, BSPLINE5_POLES, BSPLINE6_POLES,
+            BSPLINE7_POLES, BSPLINE8_POLES, BSPLINE9_POLES, BSPLINE10_POLES, BSPLINE11_POLES,
+        },
+    },
+    util::ArrayConvert,
 };
-use num_traits::{AsPrimitive, ConstOne};
+use num_traits::{AsPrimitive, ConstOne, Float};
 
 mod poles;
 
@@ -23,82 +30,80 @@ pub trait BSplinePrefilter<const NPOLES: usize>: Copy + Default {
     // Also I hate that I can't make this an associated constant, but
     // the Float trait cannot work with this as trait methods in general
     // cannot be const.
-    /// the poles of the BSpline
-    fn poles() -> [Self::Float; NPOLES];
-    /// normalization constant TODO gamma something, but not `n!` (fakultaet)
+    /// The poles of the BSpline. The number of for a BSpline of degree
+    /// `n` is `floor(n/2)`, see [B&M 2018](https://www.ipol.im/pub/art/2018/221/).
+    fn poles(&self) -> &[Self::Float; NPOLES];
+    /// normalization constant from eq. (75) in the [B&M 2018](https://www.ipol.im/pub/art/2018/221/)
+    /// paper, which is `1` for odd degree `n` and `2^n` otherwise.
     fn normalization() -> Self::Float;
 }
 
-impl<F> BSplinePrefilter<1> for BSpline3<F>
-where
-    F: num_traits::Float + Copy + 'static + ConstOne,
-    f64: AsPrimitive<F>,
-{
-    type Float = F;
-    #[inline]
-    fn normalization() -> Self::Float {
-        F::ONE
-    }
+/// utility macro to implement the constructors and the prefilter trait for
+/// a given B-Spline
+macro_rules! impl_bspline {
+    (
+        $spline:ident,
+        npoles = $npoles:literal,
+        poles = $poles:ident,
+        norm = $normalization:literal
+    ) => {
+        impl<F: num_traits::Float> $spline<F>
+        where
+            F: Copy + 'static,
+            f64: AsPrimitive<F>,
+        {
+            #[inline]
+            /// create a new instance
+            pub fn new() -> Self {
+                Self {
+                    poles: ArrayConvert::new($poles).as_(),
+                }
+            }
+        }
 
-    #[inline]
-    fn poles() -> [Self::Float; 1] {
-        core::array::from_fn(|idx| BSPLINE3_POLES[idx].as_())
-    }
+        /// same as `Self::new` constructor
+        impl<T> Default for $spline<T>
+        where
+            f64: AsPrimitive<T>,
+            T: Float + Copy + 'static,
+        {
+            #[inline]
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl<F> BSplinePrefilter<$npoles> for $spline<F>
+        where
+            F: num_traits::Float + Copy + 'static + ConstOne,
+            f64: AsPrimitive<F>,
+        {
+            type Float = F;
+            #[inline]
+            fn normalization() -> Self::Float {
+                $normalization.as_()
+            }
+
+            #[inline]
+            fn poles(&self) -> &[Self::Float; $npoles] {
+                &self.poles
+            }
+        }
+    };
 }
 
-impl<F> BSplinePrefilter<2> for BSpline4<F>
-where
-    F: num_traits::Float + Copy + 'static + ConstOne,
-    f64: AsPrimitive<F>,
-{
-    type Float = F;
-
-    #[inline]
-    fn poles() -> [Self::Float; 2] {
-        const { assert!(BSPLINE4_POLES.len() == 2) }
-        core::array::from_fn(|idx| BSPLINE4_POLES[idx].as_())
-    }
-
-    #[inline]
-    fn normalization() -> Self::Float {
-        16.0.as_()
-    }
-}
-
-impl<F> BSplinePrefilter<5> for BSpline10<F>
-where
-    F: num_traits::Float + Copy + 'static + ConstOne,
-    f64: AsPrimitive<F>,
-{
-    type Float = F;
-
-    #[inline]
-    fn poles() -> [Self::Float; 5] {
-        const { assert!(BSPLINE10_POLES.len() == 5) }
-        core::array::from_fn(|idx| BSPLINE10_POLES[idx].as_())
-    }
-
-    #[inline]
-    fn normalization() -> Self::Float {
-        1024.0.as_()
-    }
-}
-
-impl<F> BSplinePrefilter<5> for BSpline11<F>
-where
-    F: num_traits::Float + Copy + 'static + ConstOne,
-    f64: AsPrimitive<F>,
-{
-    type Float = F;
-
-    #[inline]
-    fn poles() -> [Self::Float; 5] {
-        const { assert!(BSPLINE11_POLES.len() == 5) }
-        core::array::from_fn(|idx| BSPLINE11_POLES[idx].as_())
-    }
-
-    #[inline]
-    fn normalization() -> Self::Float {
-        F::ONE
-    }
-}
+impl_bspline!(BSpline2, npoles = 1, poles = BSPLINE2_POLES, norm = 4.0);
+impl_bspline!(BSpline3, npoles = 1, poles = BSPLINE3_POLES, norm = 1.0);
+impl_bspline!(BSpline4, npoles = 2, poles = BSPLINE4_POLES, norm = 16.0);
+impl_bspline!(BSpline5, npoles = 2, poles = BSPLINE5_POLES, norm = 1.0);
+impl_bspline!(BSpline6, npoles = 3, poles = BSPLINE6_POLES, norm = 64.0);
+impl_bspline!(BSpline7, npoles = 3, poles = BSPLINE7_POLES, norm = 1.0);
+impl_bspline!(BSpline8, npoles = 4, poles = BSPLINE8_POLES, norm = 256.);
+impl_bspline!(BSpline9, npoles = 4, poles = BSPLINE9_POLES, norm = 1.0);
+impl_bspline!(
+    BSpline10,
+    npoles = 5,
+    poles = BSPLINE10_POLES,
+    norm = 1024.0
+);
+impl_bspline!(BSpline11, npoles = 5, poles = BSPLINE11_POLES, norm = 1.0);
