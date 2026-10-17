@@ -1,5 +1,5 @@
 use crate::{
-    bspline::{BSpline3, BSpline4, BSplineWeights},
+    bspline::{BSpline3, BSpline4, BSplinePrefilter, BSplineWeights},
     inplace::{
         TransmittableBoundaryExtension,
         builder::{RowMajor, SplineInterpolator2d},
@@ -27,13 +27,13 @@ macro_rules! gen_bspline_test {
         $(
             #[$meta:meta]
         )+
-        fn $fn:ident<B,const N :usize> ($($arg:ident : $type:ty),+ $(,)?)
-        where B:BSplineWeights<N> $body:block
+        fn $fn:ident<B,const NP :usize, const NW: usize> ($($arg:ident : $type:ty),+ $(,)?)
+        where B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64> $(,)? $body:block
     ) => {
         // the generic function which will be called by all recursively
         // expanded functions internally
-        fn $fn<B,const N: usize> ($($arg : $type),+)
-        where B:BSplineWeights<N> $body
+        fn $fn<B,const NP :usize, const NW: usize> ($($arg : $type),+)
+        where B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64>, $body
 
         gen_bspline_test! {
             @internal,
@@ -61,7 +61,7 @@ macro_rules! gen_bspline_test {
             )+
             #[track_caller]
             fn [<$fn _ $spline:lower>]($($arg:$type),+) {
-                $fn::<$spline<$Scalar>,_>($($arg),+)
+                $fn::<$spline<$Scalar>,_,_>($($arg),+)
             }
         }
 
@@ -94,11 +94,11 @@ gen_bspline_test! {
 #[test_case(TransmittableBoundaryExtension::Periodic, 1e-15)]
 #[test_case(TransmittableBoundaryExtension::Mirrored, 1e-15)]
 #[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-15)]
-fn input_is_reproduced_within_relative_error_on_original_grid<B,const N: usize>(
+fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize, const NW: usize>(
     ext: TransmittableBoundaryExtension,
     epsilon: f64,
-)
-where B:BSplineWeights<N>
+) where
+    B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64>,
 {
     let original = read_f64le("test-assets/coefficients2d/image_512x1024.f64");
     let fmax = original
@@ -117,8 +117,7 @@ where B:BSplineWeights<N>
         width: 512,
         height: 1024,
     };
-    let interpolator =
-        SplineInterpolator2d::from_image(BSpline3::<f64>::new(), data, ext, epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
 
     let mut abs_sum = 0.;
     for r in 0..original.height {
@@ -137,6 +136,9 @@ where B:BSplineWeights<N>
         }
     }
     // just a sanity check
-    assert!(abs_sum>f64::EPSILON,"interpolated images is likely all zeros... very suspicious");
+    assert!(
+        abs_sum > f64::EPSILON,
+        "interpolated images is likely all zeros... very suspicious"
+    );
 }
 }
