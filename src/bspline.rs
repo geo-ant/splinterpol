@@ -34,6 +34,18 @@ pub use weights::BSplineWeights;
 /// alias for the BSpline of order 3
 pub type CubicBSpline<T> = BSpline3<T>;
 
+/// A supertrait for a B-Spline describing the floating point type it takes
+/// and it's degree. Due to Rust's limitations around const generic programming,
+/// it isn't useful on its own. The useful numerical implementations are in
+/// [`BSplinePrefilter`] and [`BSplineWeights`].
+pub trait BSpline: Copy + Default {
+    /// The floating point type that a particular B-Spline operates on.
+    type Float: num_traits::Float;
+    /// The polynomial degree of the B-Spline. Some papers call this the _order_,
+    /// but other papers use that term differently. Degree is unambiguous.
+    const DEGREE: usize;
+}
+
 /// BSpline of degree 2
 #[derive(Debug, Clone, Copy)]
 pub struct BSpline2<T: Float> {
@@ -96,3 +108,27 @@ pub struct BSpline10<T> {
 pub struct BSpline11<T> {
     poles: [T; 5],
 }
+
+macro_rules! impl_bspline {
+    ($spline:ident, $degree:literal) => {
+        impl<T> BSpline for $spline<T>
+        where
+            T: num_traits::Float + 'static,
+            f64: num_traits::AsPrimitive<T>,
+        {
+            type Float = T;
+            const DEGREE: usize = $degree;
+        }
+    };
+}
+
+impl_bspline!(BSpline2, 2);
+impl_bspline!(BSpline3, 3);
+impl_bspline!(BSpline4, 4);
+impl_bspline!(BSpline5, 5);
+impl_bspline!(BSpline6, 6);
+impl_bspline!(BSpline7, 7);
+impl_bspline!(BSpline8, 8);
+impl_bspline!(BSpline9, 9);
+impl_bspline!(BSpline10, 10);
+impl_bspline!(BSpline11, 11);

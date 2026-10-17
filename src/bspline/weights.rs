@@ -1,5 +1,5 @@
 use crate::{
-    bspline::{BSpline3, BSpline4},
+    bspline::{BSpline, BSpline3, BSpline4},
     numerics::FusedMuladd,
 };
 use num_traits::{AsPrimitive, ConstOne, ConstZero, Float};
@@ -7,8 +7,11 @@ use num_traits::{AsPrimitive, ConstOne, ConstZero, Float};
 // NOTE: why the stupid constant for the number of weights,
 // even though the number of weights is defined by each degree only?
 // See the comments on the other trait for a rant.
-pub trait BSplineWeights<const NWEIGHTS: usize>: Copy + Default {
-    type Float: Float;
+/// **Note** The number `NWEIGHTS` is the number of elements in the weight
+/// vector (`interpn` calls it the _footprint_) used for evaluating the values
+/// of the spline around the grid points for interpolation. The number of
+/// weights is exactly `n+1` for a BSpline with polynomial degreen `n`.
+pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
     fn eval(self, coord: Self::Float) -> Self::Float;
     /// this must be exactly `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
@@ -19,8 +22,6 @@ where
     F: Float + 'static + ConstOne + ConstZero,
     f64: AsPrimitive<F>,
 {
-    type Float = F;
-
     #[inline(always)]
     fn eval(self, x: F) -> F {
         // generated this function with `python scripts/bspline-eval-function.py 3`
@@ -50,8 +51,6 @@ where
     F: Float + 'static + ConstOne + ConstZero,
     f64: AsPrimitive<F>,
 {
-    type Float = F;
-
     #[inline]
     fn eval(self, x: F) -> F {
         // NOTE(geo): also created with the script and then had an llm apply the muladd.
@@ -91,3 +90,5 @@ where
         2.5.as_()
     }
 }
+
+// impl<F> BSplineWeights<6

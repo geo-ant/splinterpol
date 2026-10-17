@@ -1,5 +1,5 @@
 use crate::{
-    bspline::{BSpline3, BSpline4, BSplinePrefilter, BSplineWeights},
+    bspline::*,
     inplace::{
         TransmittableBoundaryExtension,
         builder::{RowMajor, SplineInterpolator2d},
@@ -28,12 +28,14 @@ macro_rules! gen_bspline_test {
             #[$meta:meta]
         )+
         fn $fn:ident<B,const NP :usize, const NW: usize> ($($arg:ident : $type:ty),+ $(,)?)
-        where B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64> $(,)? $body:block
+        // this is my lazy as fuck way of not parsing the where clause and still
+        // only ever having to write this once... I know, right?
+        where ... $body:block
     ) => {
         // the generic function which will be called by all recursively
         // expanded functions internally
         fn $fn<B,const NP :usize, const NW: usize> ($($arg : $type),+)
-        where B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64>, $body
+        where B: BSpline<Float = f64> + BSplineWeights<NW> + BSplinePrefilter<NP>, $body
 
         gen_bspline_test! {
             @internal,
@@ -97,8 +99,7 @@ gen_bspline_test! {
 fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize, const NW: usize>(
     ext: TransmittableBoundaryExtension,
     epsilon: f64,
-) where
-    B: BSplineWeights<NW, Float = f64> + BSplinePrefilter<NP, Float = f64>,
+) where ...
 {
     let original = read_f64le("test-assets/coefficients2d/image_512x1024.f64");
     let fmax = original

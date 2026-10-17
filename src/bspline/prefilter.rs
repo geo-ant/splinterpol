@@ -1,7 +1,7 @@
 use crate::{
     bspline::{
-        BSpline2, BSpline3, BSpline4, BSpline5, BSpline6, BSpline7, BSpline8, BSpline9, BSpline10,
-        BSpline11,
+        BSpline, BSpline2, BSpline3, BSpline4, BSpline5, BSpline6, BSpline7, BSpline8, BSpline9,
+        BSpline10, BSpline11,
         prefilter::poles::{
             BSPLINE2_POLES, BSPLINE3_POLES, BSPLINE4_POLES, BSPLINE5_POLES, BSPLINE6_POLES,
             BSPLINE7_POLES, BSPLINE8_POLES, BSPLINE9_POLES, BSPLINE10_POLES, BSPLINE11_POLES,
@@ -16,9 +16,7 @@ mod poles;
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
-pub trait BSplinePrefilter<const NPOLES: usize>: Copy + Default {
-    /// Floating point type for computations
-    type Float: num_traits::Float;
+pub trait BSplinePrefilter<const NPOLES: usize>: BSpline {
     // we can't fucking do this because
     // "generic parameters may not be used in const expressions"
     // so we would have to stick the fucking number of poles into the
@@ -78,7 +76,6 @@ macro_rules! impl_bspline {
             F: num_traits::Float + Copy + 'static + ConstOne,
             f64: AsPrimitive<F>,
         {
-            type Float = F;
             #[inline]
             fn normalization() -> Self::Float {
                 $normalization.as_()
