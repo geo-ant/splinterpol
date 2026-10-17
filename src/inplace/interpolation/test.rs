@@ -89,13 +89,25 @@ macro_rules! gen_bspline_test {
 
 gen_bspline_test! {
 //TODO(geo): append the other splines here
-#[splines(BSpline3<f64>,BSpline4<f64>,BSpline5<f64>)]
+#[splines(BSpline3<f64>,BSpline4<f64>,BSpline5<f64>,BSpline6<f64>,
+    BSpline7<f64>,BSpline9<f64>,BSpline10<f64>,BSpline11<f64>)]
 #[test_case(TransmittableBoundaryExtension::Periodic, 1e-8)]
 #[test_case(TransmittableBoundaryExtension::Mirrored, 1e-8)]
 #[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
-#[test_case(TransmittableBoundaryExtension::Periodic, 1e-15)]
-#[test_case(TransmittableBoundaryExtension::Mirrored, 1e-15)]
-#[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-15)]
+// NOTE(geo): see also below. The B&M paper specificies `epsilon` as
+// a _relative bound_, see top of page 108. The error for each interpolated
+// value is err(f_k) < epsilon max(|f|)
+// However(!!), in the remarks on p. 137 at the end of appendix C.1,
+// the paper also states:
+// > For really small values of ε (e.g. ε < 10−12), the machine precision
+// > should be considered. Thus  the experimental error may be higher in
+// > this case.
+//
+// This is in line with the observation that for 1e-15, we get small, but
+// noticeable floating point errors that violate the relative bound.
+#[test_case(TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case(TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
 fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize, const NW: usize>(
     ext: TransmittableBoundaryExtension,
     epsilon: f64,
