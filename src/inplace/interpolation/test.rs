@@ -6,8 +6,11 @@ use crate::{
     },
     test_utils::read_f64le,
 };
-use float_cmp::{approx_eq, assert_approx_eq};
+use float_cmp::{ApproxEq, FloatMargin, approx_eq, assert_approx_eq};
+use num_traits::{AsPrimitive, Float, FromPrimitive, float::TotalOrder};
 use test_case::test_case;
+
+mod synthetic_image;
 
 // little hack macro to make the spline test function "generic" over the Bspline
 // without actually pulling in another generic test dependency for now, because
@@ -162,4 +165,79 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
         "interpolated images is likely all zeros... very suspicious"
     );
 }
+}
+
+fn accurate_interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
+    width: usize,
+    height: usize,
+    ext: TransmittableBoundaryExtension,
+    epsilon: T,
+) where
+    B: BSpline<Float = T> + BSplineWeights<NW> + BSplinePrefilter<NP>,
+    T: Float
+        + 'static
+        + num_traits::ConstOne
+        + num_traits::ConstZero
+        + std::iter::Sum
+        + std::fmt::Debug
+        + ApproxEq
+        + FromPrimitive
+        + TotalOrder,
+    f64: AsPrimitive<T>,
+    T: AsPrimitive<<<T as ApproxEq>::Margin as FloatMargin>::F>,
+    <<T as ApproxEq>::Margin as FloatMargin>::F: Copy,
+{
+    let image = generate_test_image::<T>(width, height);
+    let fmax = image
+        .iter()
+        .map(|f| f.abs())
+        .max_by(|a, b| T::total_cmp(&a, &b))
+        .unwrap()
+        .abs();
+    assert!(fmax.is_finite());
+    let data = RowMajor {
+        data: image.to_vec(),
+        width,
+        height,
+    };
+    let original = RowMajor {
+        data: image.to_vec(),
+        width,
+        height,
+    };
+    let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
+
+    let mut abs_sum = T::ZERO;
+
+    let mut discrepancies = Vec::new();
+    for r in 0..original.height {
+        for c in 0..original.width {
+            let actual = interpolator
+                .interp_single(T::from_usize(r).unwrap(), T::from_usize(c).unwrap())
+                .unwrap();
+            let expected = *original.at(r, c);
+            abs_sum = abs_sum + expected.abs();
+            if !approx_eq!(
+                T,
+                actual,
+                expected,
+                // NOTE: the B&M paper specifies that epsilon is a relative
+                // bound so this should be the right bound to enforce here.
+                epsilon = (epsilon * fmax).as_()
+            ) {
+                discrepancies.push(((r, c), (expected, actual)));
+            }
+        }
+    }
+
+    assert!(
+        discrepancies.is_empty(),
+        "following errors found: {:?}",
+        discrepancies
+    );
+    // just a sanity check
+    assert!(
+        abs_sum > T::epsilon(),
+        "interpolated images is likely all zeros... very suspicious"
+    );
 }
