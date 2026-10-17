@@ -1,5 +1,5 @@
 use crate::{
-    bspline::{BSpline, BSpline3, BSpline4},
+    bspline::{BSpline, BSpline3, BSpline4, BSpline5},
     numerics::FusedMuladd,
 };
 use num_traits::{AsPrimitive, ConstOne, ConstZero, Float};
@@ -91,4 +91,47 @@ where
     }
 }
 
-// impl<F> BSplineWeights<6
+impl<F> BSplineWeights<6> for BSpline5<F>
+where
+    F: Float + 'static + ConstOne + ConstZero,
+    f64: AsPrimitive<F>,
+{
+    fn eval(self, x: Self::Float) -> Self::Float {
+        // from the script, then manually refined, then let an llm handle
+        // the tedious work of writing this as muladds
+        let x = x.abs();
+
+        if x < F::ONE {
+            let x2 = x * x;
+
+            // 66 + x² * (-60 + x² * (30 - 10*x))
+            let p = x.fmuladd((-10.0).as_(), 30.0.as_());
+            let p = x2.fmuladd(p, (-60.0).as_());
+            return x2.fmuladd(p, 66.0.as_());
+        }
+
+        if x < 2.0.as_() {
+            let y = 2.0.as_() - x;
+
+            // 1 + y * (5 + y * (10 + y * (10 + y * (5 - 5*y))))
+            let p = y.fmuladd((-5.0).as_(), 5.0.as_());
+            let p = y.fmuladd(p, 10.0.as_());
+            let p = y.fmuladd(p, 10.0.as_());
+            let p = y.fmuladd(p, 5.0.as_());
+            return y.fmuladd(p, F::ONE);
+        }
+
+        if x < 3.0.as_() {
+            let y = 3.0.as_() - x;
+            let y2 = y * y;
+            let y4 = y2 * y2;
+            return y4 * y;
+        }
+
+        F::ZERO
+    }
+
+    fn radius() -> Self::Float {
+        3.0.as_()
+    }
+}

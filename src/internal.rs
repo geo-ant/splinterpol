@@ -23,9 +23,10 @@ where
     // NOTE that in section 5.1 in the B&M paper, the authors say that they
     // use the truncation index from eqn (51) but with a modified \epsilon'
     // where \epsilon' = rho^(n) \epsilon/2.
-    let epsilon_prime = epsilon * rhon / (F::ONE + F::ONE);
-    // NOTE: we calculate ln(epsilon' * rho^(n)) here
-    let ln_epsilon_prime_rhon = (epsilon_prime * rhon).ln();
+    // NOTE: we calculate
+    // ln(epsilon' * rho^(n)) = ln(epsilon * rho^2/2)=ln(epsilon)*2 ln(rho)+2 here
+    let two = F::ONE + F::ONE;
+    let ln_epsilon_prime_rhon = epsilon.ln() + two * rhon.ln() - two.ln();
 
     let mut n_trunc = [0; NPOLES];
     let mut mu_prod = F::ONE;
@@ -70,6 +71,7 @@ fn compute_mus<F, const NPOLES: usize>(poles: &[F; NPOLES]) -> [F; NPOLES]
 where
     F: Float + ConstOne + ConstZero + FusedMuladd,
 {
+    const { assert!(NPOLES > 0) };
     let mut mu = [F::ZERO; NPOLES];
 
     let mut sum = F::ZERO;

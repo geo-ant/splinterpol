@@ -6,7 +6,7 @@ use crate::{
     },
     test_utils::read_f64le,
 };
-use float_cmp::assert_approx_eq;
+use float_cmp::{approx_eq, assert_approx_eq};
 use test_case::test_case;
 
 // little hack macro to make the spline test function "generic" over the Bspline
@@ -89,7 +89,7 @@ macro_rules! gen_bspline_test {
 
 gen_bspline_test! {
 //TODO(geo): append the other splines here
-#[splines(BSpline3<f64>,BSpline4<f64>)]
+#[splines(BSpline3<f64>,BSpline4<f64>,BSpline5<f64>)]
 #[test_case(TransmittableBoundaryExtension::Periodic, 1e-8)]
 #[test_case(TransmittableBoundaryExtension::Mirrored, 1e-8)]
 #[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
@@ -104,7 +104,8 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
     let original = read_f64le("test-assets/coefficients2d/image_512x1024.f64");
     let fmax = original
         .iter()
-        .max_by(|a, b| f64::total_cmp(a, b))
+        .max_by(|a, b| f64::total_cmp(&a.abs(), &b.abs()))
+        .copied()
         .unwrap()
         .abs();
     assert!(fmax.is_finite());
@@ -121,21 +122,28 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
     let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
 
     let mut abs_sum = 0.;
+
+    let mut discrepancies = Vec::new();
     for r in 0..original.height {
         for c in 0..original.width {
             let actual = interpolator.interp_single(r as f64, c as f64).unwrap();
             let expected = *original.at(r, c);
             abs_sum += expected.abs();
-            assert_approx_eq!(
+            if !approx_eq!(
                 f64,
                 actual,
                 expected,
                 // NOTE: the B&M paper specifies that epsilon is a relative
                 // bound so this should be the right bound to enforce here.
                 epsilon = epsilon * fmax
-            );
+            ) {
+                discrepancies.push(((r,c),(expected,actual)));
+
+            }
         }
     }
+
+    assert!(discrepancies.is_empty(),"following errors found: {:?}",discrepancies);
     // just a sanity check
     assert!(
         abs_sum > f64::EPSILON,

@@ -956,10 +956,10 @@ pub(crate) fn causal_blocked<const N: usize, F: Float + Sum + ConstZero>(
 
     for j in 0..N {
         for k in 0..=j {
-            y[j] = x[j - k].mul_add(alpha.powi(k as i32), y[j]);
+            y[j] = x[j - k].fmuladd(alpha.powi(k as i32), y[j]);
         }
 
-        y[j] = prologue.mul_add(alpha.powi((j + 1) as i32), y[j]);
+        y[j] = prologue.fmuladd(alpha.powi((j + 1) as i32), y[j]);
     }
     y
 }
