@@ -461,8 +461,6 @@ where
                 }
                 idx -= BLOCKSIZE;
             }
-        } else {
-            idx = end_idx - 1;
         }
     }
 

@@ -461,14 +461,20 @@ fn exponential_filter_reproduces_reference_results(
     )
     .unwrap();
 
+    // NOTE: we're identical to the reference implementation for block-size==1
+    // but due to rounding effects, we have different results for higher
+    // block sizes and need to relax the bound a little here...
+    let allowed_eps = if blocksize == 1 {
+        f64::EPSILON
+    } else {
+        4. * f64::EPSILON
+    };
+
     assert_approx_eq!(
         &[f64],
         expected.as_slice(),
         data.as_slice(),
-        // NOTE: we're bit identical to the reference implementation
-        // ulps = 0,
-        // TODO reset to 0 again...
-        epsilon = 5. * f64::EPSILON
+        epsilon = allowed_eps
     );
 
     // only run those other blocks in one test since they don't depend
