@@ -22,7 +22,7 @@ impl SynthImage {
         }
     }
 
-    pub fn as_row_major<T>(&self) -> RowMajor<T>
+    pub fn as_row_major<T>(&self) -> RowMajor<Vec<T>>
     where
         f64: AsPrimitive<T>,
         T: Copy + 'static + Float + ConstZero,

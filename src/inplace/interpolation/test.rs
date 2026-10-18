@@ -3,10 +3,11 @@ use crate::{
     inplace::{
         TransmittableBoundaryExtension,
         builder::{RowMajor, SplineInterpolator2d},
+        interpolation::test::synthetic_image::SynthImage,
     },
     test_utils::read_f64le,
 };
-use float_cmp::{ApproxEq, FloatMargin, approx_eq, assert_approx_eq};
+use float_cmp::{ApproxEq, FloatMargin, approx_eq};
 use num_traits::{AsPrimitive, Float, FromPrimitive, float::TotalOrder};
 use test_case::test_case;
 
@@ -187,24 +188,18 @@ fn accurate_interpolation_for_synthetic_image<T, B, const NP: usize, const NW: u
     T: AsPrimitive<<<T as ApproxEq>::Margin as FloatMargin>::F>,
     <<T as ApproxEq>::Margin as FloatMargin>::F: Copy,
 {
-    let image = generate_test_image::<T>(width, height);
+    let synth_image = SynthImage::new(width, height);
+    let image = synth_image.as_row_major();
     let fmax = image
+        .data
         .iter()
         .map(|f| f.abs())
         .max_by(|a, b| T::total_cmp(&a, &b))
         .unwrap()
         .abs();
     assert!(fmax.is_finite());
-    let data = RowMajor {
-        data: image.to_vec(),
-        width,
-        height,
-    };
-    let original = RowMajor {
-        data: image.to_vec(),
-        width,
-        height,
-    };
+    let data = image.clone();
+    let original = image;
     let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
 
     let mut abs_sum = T::ZERO;
