@@ -1,3 +1,9 @@
+use core::ptr::write_bytes;
+use std::{
+    fs::File,
+    io::{BufWriter, Write},
+};
+
 use crate::{
     bspline::*,
     inplace::{
@@ -5,7 +11,7 @@ use crate::{
         builder::{RowMajor, SplineInterpolator2d},
         interpolation::test::synthetic_image::SynthImage,
     },
-    test_utils::read_f64le,
+    test_utils::{read_f32le_asf64, read_f64le},
 };
 use float_cmp::{ApproxEq, FloatMargin, approx_eq};
 use num_traits::{AsPrimitive, Float, FromPrimitive, float::TotalOrder};
@@ -91,13 +97,15 @@ macro_rules! gen_bspline_test {
     ) => {};
 }
 
+// this test makes sure that the interpolation for all implemented spline
+// orders _on the original grid coordinates_ stays within the given relative
+// error bounds. We're only testing interpolation on the original grid coords,
+// since we don't actually know the true interpolated values. I've seletected
+// a range of image from the imagej sample images covering cells, brain mri,
+// photos and such.
 gen_bspline_test! {
-//TODO(geo): append the other splines here
 #[splines(BSpline3<f64>,BSpline4<f64>,BSpline5<f64>,BSpline6<f64>,
     BSpline7<f64>,BSpline9<f64>,BSpline10<f64>,BSpline11<f64>)]
-#[test_case(TransmittableBoundaryExtension::Periodic, 1e-8)]
-#[test_case(TransmittableBoundaryExtension::Mirrored, 1e-8)]
-#[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
 // NOTE(geo): see also below. The B&M paper specificies `epsilon` as
 // a _relative bound_, see top of page 108. The error for each interpolated
 // value is err(f_k) < epsilon max(|f|)
@@ -109,15 +117,71 @@ gen_bspline_test! {
 //
 // This is in line with the observation that for 1e-15, we get small, but
 // noticeable floating point errors that violate the relative bound.
-#[test_case(TransmittableBoundaryExtension::Periodic, 1e-13)]
-#[test_case(TransmittableBoundaryExtension::Mirrored, 1e-13)]
-#[test_case(TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// ** this is a synthetic image generated in matlab that has proven pretty useful, so it stays in the suite.
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/coefficients2d/image_512x1024.f64",512,1024,false,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** blobs
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/blobs_256x254.f32.raw",256,254,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** boats
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/boats_720x576.f32.raw",720,576,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** clown
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/clown_320x200.f32.raw",320,200,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** fly-brain
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/fly-brain_256x256.f32.raw",256,256,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** gel
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/gel_276x467.f32.raw",276,467,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
+// *** mri
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::Periodic, 1e-8)]
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::Mirrored, 1e-8)]
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-8)]
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::Periodic, 1e-13)]
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::Mirrored, 1e-13)]
+#[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,TransmittableBoundaryExtension::WholeSymmetric, 1e-13)]
 fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize, const NW: usize>(
+    image_path: &str,
+    width: usize,
+    height: usize,
+    is_f32: bool,
     ext: TransmittableBoundaryExtension,
     epsilon: f64,
 ) where ...
 {
-    let original = read_f64le("test-assets/coefficients2d/image_512x1024.f64");
+    // i know this is hacky...
+    let original = if is_f32 {
+        read_f32le_asf64(image_path)
+    } else {
+        read_f64le(image_path)}
+    ;
+    assert_eq!(original.len(), width*height, "image size probably wrong");
     let fmax = original
         .iter()
         .max_by(|a, b| f64::total_cmp(&a.abs(), &b.abs()))
@@ -127,13 +191,13 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
     assert!(fmax.is_finite());
     let data = RowMajor {
         data: original.clone(),
-        width: 512,
-        height: 1024,
+        width,
+        height,
     };
     let original = RowMajor {
         data: original,
-        width: 512,
-        height: 1024,
+        width,
+        height,
     };
     let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
 
@@ -198,6 +262,20 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
         .max_by(|a, b| T::total_cmp(&a, &b))
         .unwrap()
         .abs();
+
+    let mut w = File::create(format!(
+        "debug_image_{}x{}.double.raw",
+        image.width, image.height
+    ))
+    .unwrap();
+    unsafe {
+        let as_bytes = core::slice::from_raw_parts(
+            image.data.as_ptr() as *const u8,
+            core::mem::size_of_val(image.data.as_slice()),
+        );
+        w.write_all(as_bytes).unwrap();
+    }
+
     assert!(fmax.is_finite());
     let data = image.clone();
     let original = image;
@@ -246,6 +324,6 @@ fn test_foo() {
         1230,
         1123,
         TransmittableBoundaryExtension::Mirrored,
-        1e-10,
+        1e-15,
     );
 }

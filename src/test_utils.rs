@@ -53,3 +53,17 @@ pub fn read_f64le<P: AsRef<Path>>(path: P) -> Vec<f64> {
         .map(|bytes| f64::from_le_bytes(bytes.try_into().unwrap()))
         .collect()
 }
+
+/// read little endian f32 values to a vec but convert them to f64
+pub fn read_f32le_asf64<P: AsRef<Path>>(path: P) -> Vec<f64> {
+    let path = path.as_ref().to_owned();
+    let bytes = std::fs::read(&path).expect(&format!("couldn't read file '{}'", path.display()));
+    assert!(
+        bytes.len().is_multiple_of(size_of::<f32>()),
+        "file size not a multiple of f64 size"
+    );
+    bytes
+        .chunks_exact(size_of::<f32>())
+        .map(|bytes| f32::from_le_bytes(bytes.try_into().unwrap()) as f64)
+        .collect()
+}
