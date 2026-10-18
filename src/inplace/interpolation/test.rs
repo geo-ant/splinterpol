@@ -168,7 +168,8 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
 }
 }
 
-fn accurate_interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
+fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
+    bspline: B,
     width: usize,
     height: usize,
     ext: TransmittableBoundaryExtension,
@@ -200,7 +201,7 @@ fn accurate_interpolation_for_synthetic_image<T, B, const NP: usize, const NW: u
     assert!(fmax.is_finite());
     let data = image.clone();
     let original = image;
-    let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::from_image(bspline, data, ext, epsilon).unwrap();
 
     let mut abs_sum = T::ZERO;
 
@@ -234,5 +235,17 @@ fn accurate_interpolation_for_synthetic_image<T, B, const NP: usize, const NW: u
     assert!(
         abs_sum > T::epsilon(),
         "interpolated images is likely all zeros... very suspicious"
+    );
+}
+
+#[test]
+#[track_caller]
+fn test_foo() {
+    interpolation_for_synthetic_image(
+        BSpline3::<f64>::new(),
+        1230,
+        1123,
+        TransmittableBoundaryExtension::Mirrored,
+        1e-10,
     );
 }
