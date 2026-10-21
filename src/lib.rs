@@ -29,6 +29,10 @@ compile_error!(
 
 use core::num::NonZero;
 
+#[cfg(test)]
+// #[cfg(feature = "__interpn")]
+mod interpn_accuracy;
+
 // #[cfg(feature = "__bench_internal")]
 #[doc(hidden)]
 pub mod bench_exports;

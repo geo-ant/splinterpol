@@ -1,8 +1,4 @@
-use core::ptr::write_bytes;
-use std::{
-    fs::File,
-    io::{BufWriter, Write},
-};
+use std::{fs::File, io::Write};
 
 use crate::{
     bspline::*,
