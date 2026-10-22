@@ -76,7 +76,7 @@ where
 
     #[inline(always)]
     fn strided_len(&self) -> usize {
-        self.data.len() / self.stride.get()
+        self.data.len().div_ceil(self.stride.get())
     }
 }
 

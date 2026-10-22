@@ -3,6 +3,9 @@ use super::StridedIter;
 use super::StridedRandomAccess;
 use core::num::NonZero;
 
+#[cfg(test)]
+mod test;
+
 // TODO:doc
 pub struct BlockedStridedSliceMut<'a, const BLOCKSIZE: usize, T> {
     // this actually doesn't contain the full slice but starts at the first
@@ -36,7 +39,7 @@ impl<'a, const BLOCKSIZE: usize, T> BlockedStridedSliceMut<'a, BLOCKSIZE, T> {
         // count = 3
         //
         // |0 |1 |2 |3 |4 |5 |6 |7 |8 |9 |10|11|12|13|14|15...
-        //    |           |           |           |  <-- stride
+        //    |           |           |           |  <-- stride boundaries
         //    |block|     |block|     |block|        <-- blocks
         //                                         ^
         //                                         | end = offset+count*stride
@@ -47,6 +50,9 @@ impl<'a, const BLOCKSIZE: usize, T> BlockedStridedSliceMut<'a, BLOCKSIZE, T> {
         // note htis requires that the block size is <= stride,
         // which makes sense since stride is the number of columns
         // (=length of a row) in a row major storage format.
+        //
+        // NOTE2: this does not require stride to be a multiple
+        // of block size.
         let past_the_end = count.checked_mul(stride)?.checked_add(access.offset)?;
 
         if stride < BLOCKSIZE {
@@ -125,7 +131,7 @@ where
 
     #[inline(always)]
     fn strided_len(&self) -> usize {
-        self.data.len() / self.stride.get()
+        self.data.len().div_ceil(self.stride.get())
     }
 }
 
