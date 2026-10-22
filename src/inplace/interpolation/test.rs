@@ -1,3 +1,4 @@
+#![allow(unsafe_code)]
 use std::{fs::File, io::Write};
 
 use crate::{
