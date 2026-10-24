@@ -9,6 +9,9 @@
 
 use num_traits::AsPrimitive;
 
+#[cfg(test)]
+mod test;
+
 #[inline(always)]
 #[cold]
 #[expect(dead_code)]

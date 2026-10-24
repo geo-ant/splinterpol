@@ -87,15 +87,11 @@ where
         // https://jlogan.dev/blog/2025/11/10/2025-11-10-interpn-fast-interpolation/
 
         // NOTE(geo) when inspecting the assembly it looks like using
-        // the std::mul_add emits better instructions compared to the
-        // libm-based Float::mul_add implementation. However, to be
-        // honest I haven't seen that change the actual performance,
-        // so this might be overengineering. But it's cheap so what
-        // the heck...
-        // #[cfg(all(feature = "fma", feature = "std"))]
-        // {
-        //     f64::mul_add(self, factor, addend)
-        // }
+        // the std dependency for the num_traits crate emits better
+        // assembly for mul-adds. However, to be honest I haven't seen
+        // that change the actual performance. But still we have the ability
+        // to change the dependency of the num_traits crate through the
+        // std or no-std features.
         #[cfg(feature = "fma")]
         {
             num_traits::Float::mul_add(self, factor, addend)

@@ -29,8 +29,10 @@ compile_error!(
 
 use core::num::NonZero;
 
+// test the absolute accuracy of this crate's interpolation on a couple
+// of test images (from ImageJ/FIJI) against interpn.
 #[cfg(test)]
-// #[cfg(feature = "__interpn")]
+#[cfg(feature = "__interpn")]
 mod interpn_accuracy;
 
 // #[cfg(feature = "__bench_internal")]
