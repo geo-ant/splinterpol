@@ -1,8 +1,6 @@
-use crate::inplace::{
-    builder::RowMajor,
-    interpolation::test::synthetic_image::shapes::{
-        Blob, ExponentialPeak, Gaussian, Line, Shape, Sinusoid,
-    },
+use crate::RowMajor;
+use crate::inplace::interpolation::test::synthetic_image::shapes::{
+    Blob, ExponentialPeak, Gaussian, Line, Shape, Sinusoid,
 };
 use core::f64;
 use num_traits::{AsPrimitive, ConstZero, Float};
@@ -74,8 +72,8 @@ impl SynthImage {
 
         RowMajor {
             data,
-            width: self.ncols,
-            height: self.nrows,
+            width: self.ncols.try_into().unwrap(),
+            height: self.nrows.try_into().unwrap(),
         }
     }
 }

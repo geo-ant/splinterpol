@@ -1,11 +1,11 @@
 #![allow(unsafe_code)]
 use std::{fs::File, io::Write};
 
+use crate::RowMajor;
 use crate::{
     bspline::*,
     inplace::{
-        TransmittableBoundaryExtension,
-        builder::{RowMajor, SplineInterpolator2d},
+        TransmittableBoundaryExtension, builder::SplineInterpolator2d,
         interpolation::test::synthetic_image::SynthImage,
     },
     test_utils::{read_f32le_asf64, read_f64le},
@@ -188,21 +188,21 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
     assert!(fmax.is_finite());
     let data = RowMajor {
         data: original.clone(),
-        width,
-        height,
+        width: width.try_into().unwrap() ,
+        height:height.try_into().unwrap(),
     };
     let original = RowMajor {
         data: original,
-        width,
-        height,
+        width: width.try_into().unwrap() ,
+        height:height.try_into().unwrap(),
     };
     let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
 
     let mut abs_sum = 0.;
 
     let mut discrepancies = Vec::new();
-    for r in 0..original.height {
-        for c in 0..original.width {
+    for r in 0..original.height.get() {
+        for c in 0..original.width.get() {
             let actual = interpolator.interp_single(r as f64, c as f64).unwrap();
             let expected = *original.at(r, c);
             abs_sum += expected.abs();
@@ -281,8 +281,8 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
     let mut abs_sum = T::ZERO;
 
     let mut discrepancies = Vec::new();
-    for r in 0..original.height {
-        for c in 0..original.width {
+    for r in 0..original.height.get() {
+        for c in 0..original.width.get() {
             let actual = interpolator
                 .interp_single(T::from_usize(r).unwrap(), T::from_usize(c).unwrap())
                 .unwrap();

@@ -1,57 +1,11 @@
 use crate::{
-    Error,
+    Error, RowMajor,
     bspline::{BSplinePrefilter, BSplineWeights},
     inplace::{TransmittableBoundaryExtension, interp2d_single},
     numerics::FusedMuladd,
 };
-use core::iter::Sum;
+use core::{iter::Sum, num::NonZero};
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
-
-#[derive(Copy, Clone, PartialEq, Eq)]
-pub struct RowMajor<C> {
-    pub data: C,
-    pub width: usize,
-    pub height: usize,
-}
-
-impl<C> core::fmt::Debug for RowMajor<C> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_struct("RowMajor")
-            .field("width", &self.width)
-            .field("height", &self.height)
-            .finish_non_exhaustive()
-    }
-}
-
-impl<T, C> AsRef<[T]> for RowMajor<C>
-where
-    C: AsRef<[T]>,
-{
-    fn as_ref(&self) -> &[T] {
-        self.data.as_ref()
-    }
-}
-
-impl<T, C> AsMut<[T]> for RowMajor<C>
-where
-    C: AsMut<[T]>,
-{
-    fn as_mut(&mut self) -> &mut [T] {
-        self.data.as_mut()
-    }
-}
-
-impl<C> RowMajor<C> {
-    /// just a convenience implementation to get a value the given 2D index,
-    /// don't rely on this for high performance computations
-    #[inline]
-    pub fn at<T>(&self, row: usize, col: usize) -> &T
-    where
-        C: AsRef<[T]>,
-    {
-        &self.data.as_ref()[row * self.width + col]
-    }
-}
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct SplineInterpolator2d<B, C> {
@@ -88,9 +42,11 @@ impl<B, C> SplineInterpolator2d<B, C> {
         } = image_data;
         crate::inplace::coefficients2d_blocked::<_, _, 1, 1>(
             bspline,
-            data.as_mut(),
-            width,
-            height,
+            RowMajor {
+                data: data.as_mut(),
+                width,
+                height,
+            },
             epsilon,
             boundary_extension,
         )?;
@@ -119,9 +75,11 @@ impl<B, C> SplineInterpolator2d<B, C> {
         let height = self.coeffs.height;
         interp2d_single(
             self.bspline,
-            self.coeffs.as_ref(),
-            width,
-            height,
+            RowMajor {
+                data: self.coeffs.as_ref(),
+                width,
+                height,
+            },
             self.boundary_extension,
             (row, col),
         )
@@ -152,29 +110,35 @@ impl<C, B> SplineInterpolator2d<B, C> {
 /// ```rust
 /// # use spleen::*;
 /// # use spleen::bspline::*;
+/// # use spleen::RowMajor;
+/// # use core::num::NonZero;
 /// # let mut some_data = [10.;90];
 /// # let epsilon = 1e-1;
-/// # let width = 9;
-/// # let height = 10;
+/// # let width = NonZero::new(9).unwrap();
+/// # let height = NonZero::new(10).unwrap();
 /// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
 /// // using the rather awkward function call
-/// inplace::coefficients2d::<_,_>(BSpline3::<f64>::new(),
-///                              &mut data1,
-///                              width,
-///                              height,
+/// inplace::coefficients2d::<_,_>(BSpline3::new(),
+///                              RowMajor {
+///                                data: &mut data1,
+///                                width,
+///                                height,
+///                              },
 ///                              epsilon,
 ///                              extension).unwrap();
 ///
 ///
 /// // using the builder
-/// inplace::Coefficients2d::new(BSpline3::<f64>::new())
+/// inplace::Coefficients2d::new(BSpline3::new())
 ///     .compute(
-///         &mut data2,
-///         width,
-///         height,
+///         RowMajor {
+///           data: &mut data2,
+///           width,
+///           height,
+///         },
 ///         epsilon,
 ///         extension,
 ///     ).unwrap();
@@ -189,21 +153,24 @@ impl<C, B> SplineInterpolator2d<B, C> {
 /// set a non-unit block size for rows and/or columns, use the builder like so:
 ///
 /// ```rust
+/// # fn foo() {
 /// # use spleen::*;
 /// # use spleen::bspline::*;
 /// # let mut some_data = [10.;90];
 /// # let epsilon = 1e-1;
-/// # let width = 9;
-/// # let height = 10;
+/// # let width = core::num::NonZero::new(9).unwrap();
+/// # let height = core::num::NonZero::new(10).unwrap();
 /// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
 /// // using the rather awkward function call
 /// inplace::coefficients2d_blocked::<_,_,2,3>(BSpline3::<f64>::new(),
-///                              &mut data1,
-///                              width,
-///                              height,
+///                              RowMajor {
+///                                data: &mut data1,
+///                                width,
+///                                height,
+///                              },
 ///                              epsilon,
 ///                              extension).unwrap();
 ///
@@ -213,15 +180,18 @@ impl<C, B> SplineInterpolator2d<B, C> {
 ///     .with_row_blocksize::<2>()
 ///     .with_column_blocksize::<3>()
 ///     .compute(
-///         &mut data2,
-///         width,
-///         height,
+///         RowMajor {
+///           data: &mut data2,
+///           width,
+///           height,
+///         },
 ///         epsilon,
 ///         extension,
 ///     ).unwrap();
 ///
 /// // produces the same coefficients in data1 and data2
 /// assert_eq!(data1,data2);
+/// # }
 /// ```
 pub struct Coefficients2d<
     // number of poles of the spline
@@ -279,9 +249,7 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB
     /// this builder pattern. The only advantage is nicer syntax.
     pub fn compute(
         self,
-        image_data: &mut [B::Float],
-        width: usize,
-        height: usize,
+        image_data: RowMajor<&mut [B::Float]>,
         epsilon: B::Float,
         boundary_extension: TransmittableBoundaryExtension,
     ) -> Result<(), Error>
@@ -292,8 +260,6 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB
         super::coefficients2d_blocked::<_, _, RB, CB>(
             self.bspline,
             image_data,
-            width,
-            height,
             epsilon,
             boundary_extension,
         )

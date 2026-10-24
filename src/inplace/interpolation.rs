@@ -1,3 +1,4 @@
+use crate::RowMajor;
 use crate::{
     Error, bspline::BSplineWeights, inplace::TransmittableBoundaryExtension, numerics::FloatVector,
 };
@@ -9,9 +10,7 @@ mod test;
 #[inline]
 pub fn interp2d_single<const NW: usize, B>(
     bspline: B,
-    coeffs2d: &[B::Float],
-    width: usize,
-    height: usize,
+    coeffs2d: RowMajor<&[B::Float]>,
     boundary_extension: TransmittableBoundaryExtension,
     // NOTE: just keep in mind that `x` is the column-index and `y` is the row index
     (rowpos, colpos): (B::Float, B::Float),
@@ -22,19 +21,19 @@ where
 {
     let fc0 = (colpos - B::radius()).ceil();
     let fr0 = (rowpos - B::radius()).ceil();
-    let c0 = fc0.to_isize().ok_or(Error::UnrepresentableNumerically)?;
-    let r0 = fr0.to_isize().ok_or(Error::UnrepresentableNumerically)?;
-    let wx = compute_weights(bspline, colpos - fc0).ok_or(Error::UnrepresentableNumerically)?;
-    let wy = compute_weights(bspline, rowpos - fr0).ok_or(Error::UnrepresentableNumerically)?;
+    let c0 = fc0.to_isize().ok_or(Error::Unrepresentable)?;
+    let r0 = fr0.to_isize().ok_or(Error::Unrepresentable)?;
+    let wx = compute_weights(bspline, colpos - fc0).ok_or(Error::Unrepresentable)?;
+    let wy = compute_weights(bspline, rowpos - fr0).ok_or(Error::Unrepresentable)?;
 
     // let patch = get_row_patch::<NW, _>(coeffs, width, height, ix, iy, boundary_extension);
 
     let row_indices: [usize; NW] = core::array::from_fn(|j| {
         let idx = r0.wrapping_add(j as isize);
-        if (0..height as isize).contains(&idx) {
+        if (0..coeffs2d.height.get() as isize).contains(&idx) {
             idx as usize
         } else {
-            boundary_extension.extended_index(idx, height)
+            boundary_extension.extended_index(idx, coeffs2d.height.get())
         }
     });
 
@@ -42,9 +41,10 @@ where
     for j in 0..NW {
         let r_j = row_indices[j];
         let wy_j = wy[j];
-        let start = width * r_j;
+        let start = coeffs2d.width.get() * r_j;
         let row = coeffs2d
-            .get(start..start.wrapping_add(width))
+            .data
+            .get(start..start.wrapping_add(coeffs2d.width.get()))
             .ok_or(Error::OutOfBounds)?;
         let coeffs = get_row_patch::<NW, _>(row, c0, boundary_extension);
         sum = coeffs.axpy(wy_j, sum);
@@ -65,7 +65,7 @@ where
     B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
 {
     let fx0 = (pos - B::radius()).ceil();
-    let x0 = fx0.to_isize().ok_or(Error::UnrepresentableNumerically)?;
+    let x0 = fx0.to_isize().ok_or(Error::Unrepresentable)?;
     let w = compute_weights(bspline, pos - fx0).ok_or(Error::OutOfBounds)?;
     let c = get_row_patch::<NW, _>(coeffs, x0, boundary_extension);
 

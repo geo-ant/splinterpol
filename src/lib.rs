@@ -43,6 +43,8 @@ pub mod inplace;
 
 mod internal;
 mod iter_utils;
+mod row_major;
+pub use row_major::RowMajor;
 mod util;
 
 /// B-splines for interpolation
@@ -73,7 +75,7 @@ pub enum Error {
     Precision,
     /// given number is unrepresentable as a float or integer in the
     /// current number type
-    UnrepresentableNumerically,
+    Unrepresentable,
 }
 
 /// re-export some dependencies with significance for the public interface

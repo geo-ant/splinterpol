@@ -1,6 +1,7 @@
 use crate::{
+    RowMajor,
     bspline::BSpline3,
-    inplace::{RowMajor, SplineInterpolator2d, TransmittableBoundaryExtension},
+    inplace::{SplineInterpolator2d, TransmittableBoundaryExtension},
     test_utils::read_f32le_asf64,
 };
 
@@ -135,8 +136,8 @@ fn absolute_accuracy_on_gridpoints_vs_interpn(
     assert_eq!(original.len(), width * height, "image size probably wrong");
     let data = RowMajor {
         data: original.clone(),
-        width,
-        height,
+        width: width.try_into().unwrap(),
+        height: height.try_into().unwrap(),
     };
     let original = data.clone();
     let interpolator =

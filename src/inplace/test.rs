@@ -1,3 +1,4 @@
+use crate::RowMajor;
 use crate::{
     bspline::*,
     inplace::{Coefficients2d, coefficients::anticausal_blocked},
@@ -764,34 +765,26 @@ fn test_coefficients2d_bspline3(
     // blocksizes and transform this into compile time block sizes
 
     let coefficients2d_with_blocksize =
-        |bspline, image_data: &mut [f64], width, height, epsilon, ext| match (
+        |bspline, image_data: RowMajor<&mut [f64]>, epsilon, ext| match (
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => coefficients2d(bspline, image_data, width, height, epsilon, ext),
-            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
-            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
-            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
+            (1, 1) => coefficients2d(bspline, image_data, epsilon, ext),
+            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(bspline, image_data, epsilon, ext),
+            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(bspline, image_data, epsilon, ext),
+            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(bspline, image_data, epsilon, ext),
             (r, c) => {
                 panic!("unsupported blocksize: R={r}, C={c}")
             }
         };
 
-    coefficients2d_with_blocksize(
-        BSpline3::<f64>::default(),
-        &mut image_data,
-        width,
-        height,
-        epsilon,
-        ext,
-    )
-    .unwrap();
+    let data = RowMajor {
+        data: image_data.as_mut_slice(),
+        width: width.try_into().unwrap(),
+        height: height.try_into().unwrap(),
+    };
+
+    coefficients2d_with_blocksize(BSpline3::<f64>::default(), data, epsilon, ext).unwrap();
     assert_approx_eq!(
         &[f64],
         &expected.as_slice(),
@@ -925,36 +918,29 @@ fn test_coefficients2d_bspline10(
     let epsilon = 1e-5;
 
     let coefficients2d_with_blocksize =
-        |bspline, image_data: &mut [f64], width, height, epsilon, ext| match (
+        |bspline, image_data: RowMajor<&mut [f64]>, epsilon, ext| match (
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => Coefficients2d::new(bspline).compute(image_data, width, height, epsilon, ext),
+            (1, 1) => Coefficients2d::new(bspline).compute(image_data, epsilon, ext),
             (6, 7) => Coefficients2d::new(bspline)
                 .with_row_blocksize::<6>()
                 .with_column_blocksize::<7>()
-                .compute(image_data, width, height, epsilon, ext),
-            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
-            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(
-                bspline, image_data, width, height, epsilon, ext,
-            ),
+                .compute(image_data, epsilon, ext),
+            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(bspline, image_data, epsilon, ext),
+            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(bspline, image_data, epsilon, ext),
             (r, c) => {
                 panic!("unsupported blocksize: R={r}, C={c}")
             }
         };
 
     let mut image_data = orig.clone();
-    coefficients2d_with_blocksize(
-        BSpline10::<f64>::default(),
-        &mut image_data,
-        width,
-        height,
-        epsilon,
-        ext,
-    )
-    .unwrap();
+    let data = RowMajor {
+        data: image_data.as_mut_slice(),
+        width: width.try_into().unwrap(),
+        height: height.try_into().unwrap(),
+    };
+    coefficients2d_with_blocksize(BSpline10::<f64>::default(), data, epsilon, ext).unwrap();
 
     assert_approx_eq!(
         &[f64],

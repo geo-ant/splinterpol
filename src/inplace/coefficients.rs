@@ -1,8 +1,8 @@
 use core::iter::Sum;
-use core::num::NonZero;
 use num_traits::{ConstOne, ConstZero, Float};
 
 use crate::Error;
+use crate::RowMajor;
 use crate::{
     bspline::BSplinePrefilter,
     inplace::TransmittableBoundaryExtension,
@@ -13,9 +13,7 @@ use crate::{
 
 pub fn coefficients2d<B, const NPOLES: usize>(
     _bspline: B,
-    image_data: &mut [B::Float],
-    width: usize,
-    height: usize,
+    image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
@@ -23,14 +21,7 @@ where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSplinePrefilter<NPOLES>,
 {
-    coefficients2d_blocked::<B, NPOLES, 1, 1>(
-        _bspline,
-        image_data,
-        width,
-        height,
-        epsilon,
-        boundary_extension,
-    )
+    coefficients2d_blocked::<B, NPOLES, 1, 1>(_bspline, image_data, epsilon, boundary_extension)
 }
 
 pub fn coefficients2d_blocked<
@@ -40,9 +31,7 @@ pub fn coefficients2d_blocked<
     const COL_BLOCKSIZE: usize,
 >(
     bspline: B,
-    image_data: &mut [B::Float],
-    width: usize,
-    height: usize,
+    image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
     boundary_extension: TransmittableBoundaryExtension,
 ) -> Result<(), Error>
@@ -51,17 +40,21 @@ where
     B: BSplinePrefilter<NPOLES>,
 {
     const { assert!(COL_BLOCKSIZE >= 1) };
-    let expected_len = match width.overflowing_mul(height) {
+    let expected_len = match image_data
+        .width
+        .get()
+        .overflowing_mul(image_data.height.get())
+    {
         (val, false) => val,
         (_, true) => return Err(Error::Overflow),
     };
 
-    if image_data.len() != expected_len {
+    if image_data.data.len() != expected_len {
         return Err(Error::Dimensions);
     }
 
-    let width = NonZero::new(width).ok_or(Error::NoData)?;
-    let height = NonZero::new(height).ok_or(Error::NoData)?;
+    let width = image_data.width;
+    let height = image_data.height;
 
     // NOTE: this is almost certainly not the most efficient way of doing things,
     // since the columns have massive stride typically,so a blocking strategy
@@ -92,7 +85,7 @@ where
             let mut idx = 0;
             for col in (0..width.get()).step_by(COL_BLOCKSIZE) {
                 let Some(col) = BlockedStridedSliceMut::<COL_BLOCKSIZE, B::Float>::new(
-                    image_data,
+                    image_data.data,
                     crate::iter_utils::StridedAccessArgs {
                         offset: col,
                         stride: width,
@@ -124,7 +117,7 @@ where
         // halving the index not sure...
         for col in remaining_start_idx..width.get() {
             let col = StridedSliceMut::new(
-                image_data,
+                image_data.data,
                 crate::iter_utils::StridedAccessArgs {
                     offset: col,
                     stride: width,
@@ -149,6 +142,7 @@ where
         .zip(truncation_indices.iter().copied())
     {
         image_data
+            .data
             .chunks_exact_mut(width.get())
             .try_for_each(|row| {
                 // NOTE PERF: interestingly, this performs better than the
@@ -165,6 +159,7 @@ where
     if B::normalization() != B::Float::ONE {
         let normalization = B::normalization().powi(2);
         image_data
+            .data
             .iter_mut()
             .for_each(|val| *val = *val * normalization);
     }

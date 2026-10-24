@@ -16,7 +16,6 @@ pub mod boundary;
 
 pub use boundary::TransmittableBoundaryExtension;
 pub use builder::Coefficients2d;
-pub use builder::RowMajor;
 pub use builder::SplineInterpolator2d;
 pub use coefficients::coefficients2d;
 pub use coefficients::coefficients2d_blocked;
