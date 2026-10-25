@@ -61,12 +61,7 @@ impl SynthImage {
         // of the image. But it should be fine for testing...
         for r in 0..self.nrows {
             for c in 0..self.ncols {
-                let mut sum = 0.;
-                for shape in self.shapes.iter() {
-                    sum += shape.at(r as _, c as _);
-                }
-
-                data[r * self.ncols + c] = sum.as_();
+                data[r * self.ncols + c] = self.at(r as _, c as _).as_();
             }
         }
 
@@ -75,5 +70,14 @@ impl SynthImage {
             width: self.ncols.try_into().unwrap(),
             height: self.nrows.try_into().unwrap(),
         }
+    }
+
+    #[inline]
+    pub fn at(&self, r: f64, c: f64) -> f64 {
+        let mut sum = 0.;
+        for shape in self.shapes.iter() {
+            sum += shape.at(r as _, c as _);
+        }
+        sum
     }
 }

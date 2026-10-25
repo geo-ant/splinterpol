@@ -2,6 +2,7 @@
 use std::{fs::File, io::Write};
 
 use crate::RowMajor;
+use crate::test_utils::iter_cross;
 use crate::{
     bspline::*,
     inplace::{
@@ -280,13 +281,14 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
 
     let mut abs_sum = T::ZERO;
 
+    // check the values on the grid itself
     let mut discrepancies = Vec::new();
-    for r in 0..original.height.get() {
-        for c in 0..original.width.get() {
+    for ridx in 0..original.height.get() {
+        for cidx in 0..original.width.get() {
             let actual = interpolator
-                .interp_single(T::from_usize(r).unwrap(), T::from_usize(c).unwrap())
+                .interp_single(T::from_usize(ridx).unwrap(), T::from_usize(cidx).unwrap())
                 .unwrap();
-            let expected = *original.at(r, c);
+            let expected = *original.at(ridx, cidx);
             abs_sum = abs_sum + expected.abs();
             if !approx_eq!(
                 T,
@@ -296,7 +298,42 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
                 // bound so this should be the right bound to enforce here.
                 epsilon = (epsilon * fmax).as_()
             ) {
-                discrepancies.push(((r, c), (expected, actual)));
+                discrepancies.push(((ridx, cidx), (expected, actual)));
+            }
+        }
+    }
+
+    assert!(
+        discrepancies.is_empty(),
+        "following errors found: {:?}",
+        discrepancies
+    );
+    // just a sanity check
+    assert!(
+        abs_sum > T::epsilon(),
+        "interpolated images is likely all zeros... very suspicious"
+    );
+
+    // check actual interpolation
+    let mut discrepancies = Vec::new();
+    for ridx in 0..original.height.get() {
+        for cidx in 0..original.width.get() {
+            for (dr, dc) in iter_cross([0.1, 0.5, 0.9], [0.1, 0.5, 0.9]) {
+                let r = ridx as f64 + dr;
+                let c = cidx as f64 + dc;
+                let actual = interpolator.interp_single(r.as_(), c.as_()).unwrap();
+                let expected = synth_image.at(r, c).as_();
+                abs_sum = abs_sum + expected.abs();
+                if !approx_eq!(
+                    T,
+                    actual,
+                    expected,
+                    // NOTE: the B&M paper specifies that epsilon is a relative
+                    // bound so this should be the right bound to enforce here.
+                    epsilon = (epsilon * fmax).as_()
+                ) {
+                    discrepancies.push(((ridx, cidx), (expected, actual)));
+                }
             }
         }
     }
@@ -318,8 +355,8 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
 fn test_foo() {
     interpolation_for_synthetic_image(
         BSpline3::<f64>::new(),
-        1230,
-        1123,
+        256,
+        256,
         TransmittableBoundaryExtension::Mirrored,
         1e-15,
     );
