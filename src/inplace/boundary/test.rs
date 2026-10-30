@@ -6,7 +6,7 @@ fn extensions_produce_reference_results_for_n_ge_2() {
     // n = 1 in the whole sym extension
     for n in [2, 1000, 100000] {
         for idx in -(4 * n as isize)..(4 * n as isize) {
-            let actual = TransmittableBoundaryExtension::Mirrored.extended_index(idx, n);
+            let actual = TransmittableBoundaryExtension::Reflected.extended_index(idx, n);
             let expected = reference::half_sym_ext(n as _, idx as _);
             assert_eq!(
                 expected,
@@ -44,7 +44,7 @@ fn extension_produces_the_only_array_index_for_n1() {
     // n = 1 in the whole sym extension
     let n = 1;
     for idx in -(10 * n as isize)..(10 * n as isize) {
-        let index = TransmittableBoundaryExtension::Mirrored.extended_index(idx, n);
+        let index = TransmittableBoundaryExtension::Reflected.extended_index(idx, n);
         assert_eq!(index, 0);
 
         let index = TransmittableBoundaryExtension::WholeSymmetric.extended_index(idx, n);

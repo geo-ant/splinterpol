@@ -29,7 +29,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -53,7 +53,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -77,7 +77,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -101,7 +101,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -125,7 +125,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -149,7 +149,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -173,7 +173,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -197,7 +197,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -221,7 +221,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -245,7 +245,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -269,7 +269,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -293,7 +293,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -317,7 +317,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -341,7 +341,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -365,7 +365,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -389,7 +389,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -506,7 +506,7 @@ fn exponential_filter_reproduces_reference_results(
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
@@ -527,7 +527,7 @@ fn exponential_filter_reproduces_reference_results(
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
@@ -548,7 +548,7 @@ fn exponential_filter_reproduces_reference_results(
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
@@ -569,7 +569,7 @@ fn exponential_filter_reproduces_reference_results(
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
@@ -642,7 +642,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1,
     1
 )]
@@ -669,7 +669,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8,
     8
 )]
@@ -696,7 +696,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     6,
     7
 )]
@@ -723,7 +723,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7,
     6
 )]
@@ -800,7 +800,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     1,
     1
 )]
@@ -827,7 +827,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     8,
     8
 )]
@@ -854,7 +854,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     6,
     7
 )]
@@ -881,7 +881,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Mirrored,
+    TransmittableBoundaryExtension::Reflected,
     7,
     6
 )]

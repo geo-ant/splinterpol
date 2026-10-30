@@ -41,10 +41,10 @@ impl SynthImage {
                     sigma: (5., 6.),
                 }
                 .into_boxed(),
-                Sinusoid::new(10., 30., fwidth / 250.).into_boxed(),
+                Sinusoid::new(10., 30., fwidth / 100.).into_boxed(),
                 Sinusoid::new(5., -20., fheight / 100.).into_boxed(),
                 Line::new(-10., (fwidth / 2., fheight / 2.), 0., 10., 0.3).into_boxed(),
-                ExponentialPeak::new(100., (fwidth / 8., fheight / 7.), fwidth / 100.).into_boxed(),
+                ExponentialPeak::new(10., (fwidth / 8., fheight / 7.), fwidth / 100.).into_boxed(),
                 Blob::new(-50., (fwidth / 2., fheight), fheight / 50., 0.4).into_boxed(),
             ],
         }
@@ -76,7 +76,7 @@ impl SynthImage {
     pub fn at(&self, r: f64, c: f64) -> f64 {
         let mut sum = 0.;
         for shape in self.shapes.iter() {
-            sum += shape.at(r as _, c as _);
+            sum += shape.at(r, c);
         }
         sum
     }

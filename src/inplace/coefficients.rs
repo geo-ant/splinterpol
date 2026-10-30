@@ -11,8 +11,10 @@ use crate::{
     numerics::{FloatVector, FusedMuladd},
 };
 
+/// This is just an alias for [`coefficients2d_blocked`](coefficients2d_blocked)
+/// with unit block sizes.
 pub fn coefficients2d<B, const NPOLES: usize>(
-    _bspline: B,
+    bspline: B,
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
     boundary_extension: TransmittableBoundaryExtension,
@@ -21,9 +23,66 @@ where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
     B: BSplinePrefilter<NPOLES>,
 {
-    coefficients2d_blocked::<B, NPOLES, 1, 1>(_bspline, image_data, epsilon, boundary_extension)
+    coefficients2d_blocked::<B, NPOLES, 1, 1>(bspline, image_data, epsilon, boundary_extension)
 }
 
+/// Calculate the spline coefficients for the given `bspline` _in place_. This
+/// overwrites the input array with the coefficients necessary to perform
+/// interpolation with the given B-Spline, see e.g.
+/// [`interp2d_single`](interp2d_single). This step is also called _prefiltering_.
+///
+/// ## Arguments
+///
+/// The B-Spline order for interpolation is defined by `bspline`. The same B-Spline
+/// order must be used both for coefficient calculation and interpolation.
+///
+/// The 2D image data must be given in row-major order in the `image_data`
+/// argument, where the length of a row is the _width_ of the image.
+/// Consequently, the number of rows (=the number of elements in a column) is
+/// the height of the image.
+///
+/// To get a unique solution to the interpolation problem, this implementation
+/// requires us to specify a continuation of the given function beyond the measured
+/// grid, such as mirrored or periodic extention. This is what `boundary_extension`
+/// is for. Though this library doesn't deal in extrapolation, this implicitly defines
+/// an extrapolation beyond the boundaries.
+///
+/// The parameter `epsilon` controls how faithfully the library reproduces
+/// the given function values _on the sampled grid points_. The interpolation
+/// error on the grid points is less than `epsilon * max(abs(f))`, where `f`
+/// is the image to interpolate (B&M sections 3.2 & 5.1). _Do not_ think of
+/// `epsilon` as meaningfully controlling the interpolation accuracy between
+/// grid points, because that depends primarily how well the spline model
+/// can describe the sampled function at all.
+///
+/// ## Recommendations
+///
+/// While B&M don't give a general recommendation for chosing `epsilon`, I'll
+/// state a couple helpful things here, based on their results (B&M section 6.2,
+/// B&M remarks in appendix C.1).
+///
+/// * For `f32` precision, consider `epsilon = 1e-6`.
+/// * Higher epsilon will slightly (but not dramatically) increase computational
+///   complexity of the coefficient calculation.
+/// * For typical use cases, the coefficient calculation is much faster than
+///   the interpolation anyways, so giving a small epsilon here doesn't matter
+///   in the grand scheme of things, unless you have to perform _many_
+///   interpolations.
+/// * Even for `f64`, due to numerical precision, `epsilon = 1e-12` is a
+///   lower limit at which the relative precision guarantee holds exactly.
+///   Lower epsilons will often still give lower absolute error, but the error
+///   might not stricly be less than `epsilon*max(|f|)`.
+///
+/// In terms of `boundary_extension` it's hard to make general recommendations
+/// and I'll just say that `scipy` uses the whole-symmetric extension in its
+/// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter)
+/// function.
+///
+/// ## References
+///
+/// * [B&M](https://www.ipol.im/pub/art/2018/221/) T. Briand, P. Monasse: "Theory
+/// and Practice of Image B-Spline Interpolation"
+/// * [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
 pub fn coefficients2d_blocked<
     B,
     const NPOLES: usize,
@@ -206,7 +265,7 @@ where
     let s_lini = {
         let signal_first = signal.first().copied().ok_or(Error::NotEnoughData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Mirrored => {
+            TransmittableBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -373,7 +432,7 @@ where
                 }
                 -alpha * acc
             }
-            TransmittableBoundaryExtension::Mirrored => alpha / (alpha - F::ONE) * signal_last,
+            TransmittableBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_last,
             TransmittableBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal
                     .get(signal.len() - 2)
@@ -530,7 +589,7 @@ where
     let s_lini = {
         let signal_first = signal.strided_first().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Mirrored => {
+            TransmittableBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -651,7 +710,7 @@ where
                 }
                 -alpha * acc
             }
-            TransmittableBoundaryExtension::Mirrored => alpha / (alpha - F::ONE) * signal_end,
+            TransmittableBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_end,
             TransmittableBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal.strided_2nd_last().ok_or(Error::NotEnoughData)?;
                 alpha / (alpha * alpha - F::ONE) * (signal_end + alpha * signal_2nd_to_last)
@@ -731,7 +790,7 @@ where
     let s_lini = {
         let signal_first = signal.strided_first().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Mirrored => {
+            TransmittableBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -856,7 +915,7 @@ where
                 }
                 acc.scal(-alpha)
             }
-            TransmittableBoundaryExtension::Mirrored => {
+            TransmittableBoundaryExtension::Reflected => {
                 signal_end.scal(alpha / (alpha - F::Scalar::ONE))
             }
             TransmittableBoundaryExtension::WholeSymmetric => {

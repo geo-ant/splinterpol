@@ -3,18 +3,35 @@ mod test;
 
 /// Describes a way to extend the signal beyond the measured domain in a way
 /// that can be _transmitted_ like described in section 3.2.2 of the
-/// Briand & Monasse paper (cf also Algorithm 5 therein). Note that constant
-/// extension can _not_ be written as a transmittable boundary condition.
+/// Briand & Monasse paper (cf also Algorithm 5 therein). Note, for example,
+/// that constant extension can _not_ be written as a transmittable boundary
+/// condition. Only transmittable boundary conditions can be used for in-place
+/// coefficient calculation.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum TransmittableBoundaryExtension {
     /// Signal `abcde` is extended to `...cba|abcde|edc` and is called
-    /// _half-symmetric_ in the Briand & Monasse paper.
-    Mirrored = 1,
-    /// Signal `abcde` is extended to `...dcb|abcde|dcb...`
+    /// _half-symmetric_ in the Briand & Monasse paper. In `scipy`
+    /// this is also called
+    /// [`reflected`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
+    Reflected = 1,
+    /// Signal `abcde` is extended to `...dcb|abcde|dcb...`. In `scipy` this is
+    /// is called
+    /// [`mirrored`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter)
+    /// and is the default mode for [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
     WholeSymmetric = 2,
-    /// Signal `abcde` is extended to `...cde|abcde|abc...`
+    /// Signal `abcde` is extended to `...cde|abcde|abc...`. In `scipy` this
+    /// is called [`grid-wrap`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
     Periodic = 3,
+}
+
+impl Default for TransmittableBoundaryExtension {
+    /// We chose the same default here as the `scipy` function
+    /// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
+    /// This doesn't mean that this is the best continuation, your mileage may vary.
+    fn default() -> Self {
+        Self::WholeSymmetric
+    }
 }
 
 impl TransmittableBoundaryExtension {
@@ -29,7 +46,7 @@ impl TransmittableBoundaryExtension {
         let n = n as isize;
 
         let mapped = match self {
-            Self::Mirrored => {
+            Self::Reflected => {
                 let period = 2 * n;
                 let i = idx.rem_euclid(period);
 

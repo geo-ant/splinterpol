@@ -49,7 +49,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
 
     for size in sizes {
         for ext in [
-            TransmittableBoundaryExtension::Mirrored,
+            TransmittableBoundaryExtension::Reflected,
             TransmittableBoundaryExtension::WholeSymmetric,
             TransmittableBoundaryExtension::Periodic,
         ] {

@@ -17,7 +17,7 @@ use test_case::test_case;
     "test-assets/imagej/blobs_256x254.f32.raw",
     256,
     254,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/blobs_256x254.f32.raw",
@@ -35,7 +35,7 @@ use test_case::test_case;
     "test-assets/imagej/boats_720x576.f32.raw",
     720,
     576,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/boats_720x576.f32.raw",
@@ -53,7 +53,7 @@ use test_case::test_case;
     "test-assets/imagej/clown_320x200.f32.raw",
     320,
     200,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/clown_320x200.f32.raw",
@@ -71,7 +71,7 @@ use test_case::test_case;
     "test-assets/imagej/fly-brain_256x256.f32.raw",
     256,
     256,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/fly-brain_256x256.f32.raw",
@@ -89,7 +89,7 @@ use test_case::test_case;
     "test-assets/imagej/gel_276x467.f32.raw",
     276,
     467,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/gel_276x467.f32.raw",
@@ -107,7 +107,7 @@ use test_case::test_case;
     "test-assets/imagej/mri_186x226.f32.raw",
     186,
     226,
-    TransmittableBoundaryExtension::Mirrored
+    TransmittableBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/mri_186x226.f32.raw",

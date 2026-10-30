@@ -8,23 +8,32 @@ use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive
 mod test;
 
 #[inline]
+/// Interpolate a single point at floating point indices for `row` and `col`
+/// of the image. **Note** that this function indexes the rows and columns of the
+/// image where `(row, col) = (y,x)` in the typical `x`, `y` coordinate system.
+///
+/// The function accepts the 2D B-Spline coefficients `coeffs2d` in row-major
+/// order, that should have been calculated with
+/// [`coefficients2d`](crate::inplace::coefficients2d) or
+/// [`coefficients2d_blocked`](`crate::inplace::coefficients2d_blocked`) using
+/// the same `bspline` and `boundary_extension` arguments.
 pub fn interp2d_single<const NW: usize, B>(
     bspline: B,
     coeffs2d: RowMajor<&[B::Float]>,
     boundary_extension: TransmittableBoundaryExtension,
     // NOTE: just keep in mind that `x` is the column-index and `y` is the row index
-    (rowpos, colpos): (B::Float, B::Float),
+    (row, col): (B::Float, B::Float),
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
     B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
 {
-    let fc0 = (colpos - B::radius()).ceil();
-    let fr0 = (rowpos - B::radius()).ceil();
+    let fc0 = (col - B::radius()).ceil();
+    let fr0 = (row - B::radius()).ceil();
     let c0 = fc0.to_isize().ok_or(Error::Unrepresentable)?;
     let r0 = fr0.to_isize().ok_or(Error::Unrepresentable)?;
-    let wx = compute_weights(bspline, colpos - fc0).ok_or(Error::Unrepresentable)?;
-    let wy = compute_weights(bspline, rowpos - fr0).ok_or(Error::Unrepresentable)?;
+    let wx = compute_weights(bspline, col - fc0).ok_or(Error::Unrepresentable)?;
+    let wy = compute_weights(bspline, row - fr0).ok_or(Error::Unrepresentable)?;
 
     // let patch = get_row_patch::<NW, _>(coeffs, width, height, ix, iy, boundary_extension);
 
