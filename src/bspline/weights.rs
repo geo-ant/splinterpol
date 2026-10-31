@@ -7,13 +7,18 @@ mod test;
 // NOTE: why the stupid constant for the number of weights,
 // even though the number of weights is defined by each degree only?
 // See the comments on the other trait for a rant.
+/// Every B-Spline in this crate implements this tait. It's used during the
+/// interpolation step.
+///
 /// **Note** The number `NWEIGHTS` is the number of elements in the weight
 /// vector (`interpn` calls it the _footprint_) used for evaluating the values
 /// of the spline around the grid points for interpolation. The number of
 /// weights is exactly `n+1` for a BSpline with polynomial degreen `n`.
 pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
+    /// evaluate the centered B-Spline at the given coordinate.
     fn eval(self, coord: Self::Float) -> Self::Float;
-    /// this must be exactly `(NWEIGHTS as Float)/2.0`
+    /// The radius of the B-Spline support. This is always
+    /// `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
 }
 

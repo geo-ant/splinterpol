@@ -31,6 +31,8 @@ mod weights;
 pub use prefilter::BSplinePrefilter;
 pub use weights::BSplineWeights;
 
+use crate::sealed::Sealed;
+
 /// alias for the BSpline of order 3
 pub type CubicBSpline<T> = BSpline3<T>;
 
@@ -38,7 +40,7 @@ pub type CubicBSpline<T> = BSpline3<T>;
 /// and it's degree. Due to Rust's limitations around const generic programming,
 /// it isn't useful on its own. The useful numerical implementations are in
 /// [`BSplinePrefilter`] and [`BSplineWeights`].
-pub trait BSpline: Copy + Default {
+pub trait BSpline: Copy + Default + Sealed {
     /// The floating point type that a particular B-Spline operates on.
     type Float: num_traits::Float;
     /// The polynomial degree of the B-Spline. Some papers call this the _order_,
@@ -118,6 +120,13 @@ macro_rules! impl_bspline {
         {
             type Float = T;
             const DEGREE: usize = $degree;
+        }
+
+        impl<F> crate::sealed::Sealed for $spline<F>
+        where
+            F: num_traits::Float + Copy + 'static,
+            f64: num_traits::AsPrimitive<F>,
+        {
         }
     };
 }

@@ -4,7 +4,7 @@ use crate::{
     inplace::{TransmittableBoundaryExtension, interp2d_single},
     numerics::FusedMuladd,
 };
-use core::{iter::Sum, num::NonZero};
+use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
 #[derive(Clone, PartialEq, Debug)]

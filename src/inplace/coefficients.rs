@@ -29,7 +29,18 @@ where
 /// Calculate the spline coefficients for the given `bspline` _in place_. This
 /// overwrites the input array with the coefficients necessary to perform
 /// interpolation with the given B-Spline, see e.g.
-/// [`interp2d_single`](interp2d_single). This step is also called _prefiltering_.
+/// [`interp2d_single`](crate::inplace::interpolation::interp2d_single). This step is also called _prefiltering_.
+///
+/// The function is a bit awkward to call because two of the generic arguments
+/// (`ROW_BLOCKSIZE` and `COL_BLOCKSIZE`) must be explicitly given, which means
+/// that the other arguments have to be written as well (but can be inferred
+/// with `_`). This is why the [`Coefficients2D`](crate::inplace::Coefficients2d)
+/// structure exists, which provides a builder style interface to this function
+/// call just for ergonomics.
+///
+/// Note also that a more high level interface to the workflow of calculating
+/// the coefficients and then using them for interpolation exists with
+/// [`crate::inplace::SplineInterpolator2d`].
 ///
 /// ## Arguments
 ///
@@ -54,6 +65,14 @@ where
 /// `epsilon` as meaningfully controlling the interpolation accuracy between
 /// grid points, because that depends primarily how well the spline model
 /// can describe the sampled function at all.
+///
+/// ### Blocking
+///
+/// The function has two additional compile time (const generic) arguments
+/// `ROW_BLOCKSIZE` and `COL_BLOCKSIZE` which allow us to specify a blocksize
+/// for operations on the rows and columns. Those blocksizes can enable SIMD
+/// accelaration for calculations, which _can_ make the calculations faster,
+/// but the only way to find out on _your system_ is to measure.
 ///
 /// ## Recommendations
 ///

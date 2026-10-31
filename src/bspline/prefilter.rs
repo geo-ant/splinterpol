@@ -16,6 +16,9 @@ mod poles;
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
+/// Every B-Spline in this crate implements this trait. It describes the
+/// poles and the normalization used for a B-Spline in the coefficient calculation
+/// (i.e. prefiltering) step.
 pub trait BSplinePrefilter<const NPOLES: usize>: BSpline {
     // we can't fucking do this because
     // "generic parameters may not be used in const expressions"

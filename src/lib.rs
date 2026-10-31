@@ -1,6 +1,7 @@
 // TODO make this into a `deny` lint conditional on not having some feature
 // `with_unsafe` or `allow_unsafe` in there...
 #![warn(unsafe_code)]
+#![warn(missing_docs)]
 // lesson learned from interpn: needless range loops can sometimes be pretty
 // neat for performance
 #![allow(clippy::needless_range_loop)]
@@ -47,6 +48,8 @@ mod row_major;
 pub use row_major::RowMajor;
 mod util;
 
+mod sealed;
+
 /// B-splines for interpolation
 pub mod bspline;
 
@@ -56,6 +59,7 @@ mod test_utils;
 
 mod numerics;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+/// This crate's error type.
 pub enum Error {
     /// not enough data to perform the interpolation with the required precision
     NotEnoughData,
@@ -86,7 +90,7 @@ pub mod reexports {
 }
 
 #[inline(never)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, missing_docs)]
 pub fn blocked_expf64_strided_iter(
     // the pole, -1 < alpha < 0
     alpha: f64,
@@ -124,7 +128,7 @@ pub fn blocked_expf64_strided_iter(
 }
 
 #[inline(never)]
-#[allow(clippy::unwrap_used)]
+#[allow(clippy::unwrap_used, missing_docs)]
 pub fn expf64_strided_iter(
     // the pole, -1 < alpha < 0
     alpha: f64,

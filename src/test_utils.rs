@@ -1,8 +1,8 @@
 use std::path::Path;
 
+/// utility macro for parametrizing a test with different instantiations
+/// of a single const-generic parameter.
 #[macro_export]
-// utility macro for parametrizing a test with different instantiations
-// of a single const-generic parameter.
 macro_rules! parametrized_test {
     (
         #[test]
