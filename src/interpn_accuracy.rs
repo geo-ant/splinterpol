@@ -140,8 +140,10 @@ fn absolute_accuracy_on_gridpoints_vs_interpn(
         height: height.try_into().unwrap(),
     };
     let original = data.clone();
-    let interpolator =
-        SplineInterpolator2d::from_image(BSpline3::default(), data, ext, epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::new(BSpline3::default())
+        .extension(ext)
+        .compute(data, epsilon)
+        .unwrap();
 
     let dims = [width, height];
     let mut scratch_buffer =

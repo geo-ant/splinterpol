@@ -2,13 +2,11 @@
 use std::{fs::File, io::Write};
 
 use crate::RowMajor;
+use crate::inplace::builder::SplineInterpolator2d;
 use crate::test_utils::iter_cross;
 use crate::{
     bspline::*,
-    inplace::{
-        TransmittableBoundaryExtension, builder::SplineInterpolator2d,
-        interpolation::test::synthetic_image::SynthImage,
-    },
+    inplace::{TransmittableBoundaryExtension, interpolation::test::synthetic_image::SynthImage},
     test_utils::{read_f32le_asf64, read_f64le},
 };
 use float_cmp::{ApproxEq, FloatMargin, approx_eq};
@@ -197,7 +195,7 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
         width: width.try_into().unwrap() ,
         height:height.try_into().unwrap(),
     };
-    let interpolator = SplineInterpolator2d::from_image(B::default(), data, ext, epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::new(B::default()).extension(ext).compute(data,  epsilon).unwrap();
 
     let mut abs_sum = 0.;
 
@@ -277,7 +275,10 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
     assert!(fmax.is_finite());
     let data = image.clone();
     let original = image;
-    let interpolator = SplineInterpolator2d::from_image(bspline, data, ext, epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::new(bspline)
+        .extension(ext)
+        .compute(data, epsilon)
+        .unwrap();
 
     let mut abs_sum = T::ZERO;
 

@@ -1,14 +1,15 @@
 use crate::{
     Error, RowMajor,
-    bspline::{BSplinePrefilter, BSplineWeights},
+    bspline::{BSpline, BSplinePrefilter, BSplineWeights},
     inplace::{TransmittableBoundaryExtension, interp2d_single},
     numerics::FusedMuladd,
 };
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct SplineInterpolator2d<B, C> {
+    bspline: B,
     // NOTE(geo) this guy uses owned containers because forcing a slice here
     // creates a mildly (but not totally, but enough for me to change it)
     // API when creating an instance of an interpolator, see
@@ -18,29 +19,104 @@ pub struct SplineInterpolator2d<B, C> {
     // and we could create shared references to the data through this type,
     // but it would make the mutable borrow to the input stay alive as long
     // as this type lives which could create surprises to downstream users.
+    //
+    // NOTE: The reason we use () for the container initially is that we
+    // make the construction of this guy follow a builder pattern, which
+    // makes for some pretty ugly generic, with very nice usage.
     coeffs: RowMajor<C>,
-    bspline: B,
     boundary_extension: TransmittableBoundaryExtension,
 }
 
-impl<B, C> SplineInterpolator2d<B, C> {
-    pub fn from_image<const NPOLES: usize>(
-        bspline: B,
+pub struct SplineInterpBuilder2d<B, C, const RB: usize, const CB: usize> {
+    bspline: B,
+    coeffs: C,
+    boundary_extension: TransmittableBoundaryExtension,
+}
+
+impl SplineInterpolator2d<(), ()> {
+    #[inline]
+    pub fn new<B: BSpline>(bspline: B) -> SplineInterpBuilder2d<B, (), 1, 1> {
+        SplineInterpBuilder2d {
+            bspline,
+            coeffs: (),
+            boundary_extension: TransmittableBoundaryExtension::WholeSymmetric,
+        }
+    }
+}
+
+impl<B, C, const CB: usize> SplineInterpBuilder2d<B, C, 1, CB> {
+    #[inline]
+    pub fn col_blocksize<const RB: usize>(self) -> SplineInterpBuilder2d<B, C, RB, CB> {
+        let SplineInterpBuilder2d {
+            bspline,
+            coeffs,
+            boundary_extension,
+        } = self;
+        SplineInterpBuilder2d {
+            bspline,
+            coeffs,
+            boundary_extension,
+        }
+    }
+}
+
+impl<B, C, const RB: usize> SplineInterpBuilder2d<B, C, RB, 1> {
+    #[inline]
+    pub fn row_blocksize<const CB: usize>(self) -> SplineInterpBuilder2d<B, C, RB, CB> {
+        let SplineInterpBuilder2d {
+            bspline,
+            coeffs,
+            boundary_extension,
+        } = self;
+        SplineInterpBuilder2d {
+            bspline,
+            coeffs,
+            boundary_extension,
+        }
+    }
+}
+
+impl<B, const RB: usize, const CB: usize> SplineInterpBuilder2d<B, (), RB, CB> {
+    /// Set the boundary extension method used by the interpolator. If this
+    /// method is not invoked, the whole-symmetric extension is used. Obviously,
+    /// this must be called before the call to [`compute`](Self::compute).
+    pub fn extension(self, boundary_extension: TransmittableBoundaryExtension) -> Self {
+        Self {
+            boundary_extension,
+            ..self
+        }
+    }
+}
+
+impl<B, const RB: usize, const CB: usize> SplineInterpBuilder2d<B, (), RB, CB> {
+    /// Try and perform the necessary precomputations (i.e. coefficient calculations)
+    /// to obtain a usable interpolator which we can use to interpolate the
+    /// given `image_data`. To understand the meaning of `epsilon` and its
+    /// recommended values, see the documentation of [`crate::inplace::coefficients2d_blocked`].
+    /// In short, `epsilon` bounds the _relative_ accuracy of the interpolation
+    /// _on the original grid points_. A conservative rule of thumb is to chose
+    /// `1e-12` for `f64` data and `1e-6` for `f32`.
+    pub fn compute<const NPOLES: usize, C>(
+        self,
         image_data: RowMajor<C>,
-        boundary_extension: TransmittableBoundaryExtension,
         epsilon: B::Float,
-    ) -> Result<Self, Error>
+    ) -> Result<SplineInterpolator2d<B, C>, Error>
     where
         C: AsMut<[B::Float]>,
         B: BSplinePrefilter<NPOLES>,
         B::Float: Float + ConstOne + ConstZero + Sum,
     {
+        let Self {
+            bspline,
+            coeffs: _coeffs,
+            boundary_extension,
+        } = self;
         let RowMajor {
             mut data,
             width,
             height,
         } = image_data;
-        crate::inplace::coefficients2d_blocked::<_, _, 1, 1>(
+        crate::inplace::coefficients2d_blocked::<_, _, RB, CB>(
             bspline,
             RowMajor {
                 data: data.as_mut(),
@@ -50,7 +126,7 @@ impl<B, C> SplineInterpolator2d<B, C> {
             epsilon,
             boundary_extension,
         )?;
-        Ok(Self {
+        Ok(SplineInterpolator2d {
             coeffs: RowMajor {
                 data,
                 width,
@@ -60,7 +136,9 @@ impl<B, C> SplineInterpolator2d<B, C> {
             boundary_extension,
         })
     }
+}
 
+impl<B, C> SplineInterpolator2d<B, C> {
     pub fn interp_single<const NWEIGHTS: usize>(
         &self,
         row: B::Float,
@@ -86,8 +164,11 @@ impl<B, C> SplineInterpolator2d<B, C> {
     }
 }
 
-impl<C, B> SplineInterpolator2d<B, C> {
-    /// consumes the interpolator and returns the calculated
+impl<B, C, const RB: usize, const CB: usize> SplineInterpBuilder2d<B, RowMajor<C>, RB, CB>
+where
+    B: BSpline,
+{
+    /// Consume the interpolator and returns the calculated
     /// B-Spline coefficients in row major fashion
     pub fn coefficients(self) -> RowMajor<C> {
         self.coeffs
