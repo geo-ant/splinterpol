@@ -74,7 +74,7 @@ def make_polynomial(coeff: list[Fraction]) -> sp.Poly:
 
 # absolute overkill
 SIGNIFICANT_DIGITS = 45
-MAX_DEGREE = 11
+MAX_DEGREE = 13
 
 print("#![allow(clippy::excessive_precision)]")
 print("/// *** AUTO GENERATED. DO NOT EDIT ***")

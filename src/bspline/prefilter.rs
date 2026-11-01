@@ -1,10 +1,11 @@
 use crate::{
     bspline::{
         BSpline, BSpline2, BSpline3, BSpline4, BSpline5, BSpline6, BSpline7, BSpline8, BSpline9,
-        BSpline10, BSpline11,
+        BSpline10, BSpline11, BSpline12,
         prefilter::poles::{
             BSPLINE2_POLES, BSPLINE3_POLES, BSPLINE4_POLES, BSPLINE5_POLES, BSPLINE6_POLES,
             BSPLINE7_POLES, BSPLINE8_POLES, BSPLINE9_POLES, BSPLINE10_POLES, BSPLINE11_POLES,
+            BSPLINE12_POLES,
         },
     },
     util::ArrayConvert,
@@ -107,3 +108,4 @@ impl_bspline!(
     norm = 1024.0
 );
 impl_bspline!(BSpline11, npoles = 5, poles = BSPLINE11_POLES, norm = 1.0);
+impl_bspline!(BSpline12, npoles = 6, poles = BSPLINE12_POLES, norm = 4096.);

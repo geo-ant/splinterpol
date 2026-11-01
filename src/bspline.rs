@@ -111,6 +111,12 @@ pub struct BSpline11<T> {
     poles: [T; 5],
 }
 
+/// B-spline of degree 12
+#[derive(Debug, Clone, Copy)]
+pub struct BSpline12<T> {
+    poles: [T; 6],
+}
+
 macro_rules! impl_bspline {
     ($spline:ident, $degree:literal) => {
         impl<T> BSpline for $spline<T>
@@ -141,3 +147,4 @@ impl_bspline!(BSpline8, 8);
 impl_bspline!(BSpline9, 9);
 impl_bspline!(BSpline10, 10);
 impl_bspline!(BSpline11, 11);
+impl_bspline!(BSpline12, 12);

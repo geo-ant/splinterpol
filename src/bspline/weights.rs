@@ -13,7 +13,7 @@ mod test;
 /// **Note** The number `NWEIGHTS` is the number of elements in the weight
 /// vector (`interpn` calls it the _footprint_) used for evaluating the values
 /// of the spline around the grid points for interpolation. The number of
-/// weights is exactly `n+1` for a BSpline with polynomial degreen `n`.
+/// weights is exactly `n+1` for a BSpline with polynomial degree `n`.
 pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
     /// evaluate the centered B-Spline at the given coordinate.
     fn eval(self, coord: Self::Float) -> Self::Float;
@@ -584,5 +584,124 @@ where
     #[inline]
     fn radius() -> Self::Float {
         6.0.as_()
+    }
+}
+
+impl<F> BSplineWeights<13> for BSpline12<F>
+where
+    F: Float + 'static + ConstOne + ConstZero,
+    f64: AsPrimitive<F>,
+{
+    #[inline]
+    fn eval(self, x: Self::Float) -> Self::Float {
+        // NOTE: generated with python script, llm assisted reformulation
+        let x = x.abs();
+
+        if x < 0.5.as_() {
+            let y2 = x * x;
+            return y2
+                .fmuladd(924.0.as_(), -18018.0.as_())
+                .fmuladd(y2, 236486.25.as_())
+                .fmuladd(y2, -2358105.75.as_())
+                .fmuladd(y2, 17075574.140625.as_())
+                .fmuladd(y2, -79943684.1328125.as_())
+                .fmuladd(y2, 181466922.6474609375.as_());
+        }
+
+        if x < 1.5.as_() {
+            let y = 1.5.as_() - x;
+            return y
+                .fmuladd(-792.0.as_(), 3960.0.as_())
+                .fmuladd(y, 5940.0.as_())
+                .fmuladd(y, -38280.0.as_())
+                .fmuladd(y, -121770.0.as_())
+                .fmuladd(y, 261360.0.as_())
+                .fmuladd(y, 1524600.0.as_())
+                .fmuladd(y, -137808.0.as_())
+                .fmuladd(y, -10932570.0.as_())
+                .fmuladd(y, -14341800.0.as_())
+                .fmuladd(y, 29555460.0.as_())
+                .fmuladd(y, 90415512.0.as_())
+                .fmuladd(y, 66318474.0.as_());
+        }
+
+        if x < 2.5.as_() {
+            let y = 2.5.as_() - x;
+            return y
+                .fmuladd(495.0.as_(), -1980.0.as_())
+                .fmuladd(y, -4950.0.as_())
+                .fmuladd(y, 11220.0.as_())
+                .fmuladd(y, 81675.0.as_())
+                .fmuladd(y, 59400.0.as_())
+                .fmuladd(y, -623700.0.as_())
+                .fmuladd(y, -1860408.0.as_())
+                .fmuladd(y, -37125.0.as_())
+                .fmuladd(y, 10101300.0.as_())
+                .fmuladd(y, 23794650.0.as_())
+                .fmuladd(y, 24610212.0.as_())
+                .fmuladd(y, 10187685.0.as_());
+        }
+
+        if x < 3.5.as_() {
+            let y = 3.5.as_() - x;
+            return y
+                .fmuladd(-220.0.as_(), 660.0.as_())
+                .fmuladd(y, 2310.0.as_())
+                .fmuladd(y, 220.0.as_())
+                .fmuladd(y, -24255.0.as_())
+                .fmuladd(y, -75240.0.as_())
+                .fmuladd(y, -23100.0.as_())
+                .fmuladd(y, 475992.0.as_())
+                .fmuladd(y, 1638945.0.as_())
+                .fmuladd(y, 2883100.0.as_())
+                .fmuladd(y, 3023790.0.as_())
+                .fmuladd(y, 1807212.0.as_())
+                .fmuladd(y, 478271.0.as_());
+        }
+
+        if x < 4.5.as_() {
+            let y = 4.5.as_() - x;
+            return y
+                .fmuladd(66.0.as_(), -132.0.as_())
+                .fmuladd(y, -594.0.as_())
+                .fmuladd(y, -1100.0.as_())
+                .fmuladd(y, 1485.0.as_())
+                .fmuladd(y, 15048.0.as_())
+                .fmuladd(y, 47124.0.as_())
+                .fmuladd(y, 91080.0.as_())
+                .fmuladd(y, 120285.0.as_())
+                .fmuladd(y, 109780.0.as_())
+                .fmuladd(y, 66726.0.as_())
+                .fmuladd(y, 24420.0.as_())
+                .fmuladd(y, 4083.0.as_());
+        }
+
+        if x < 5.5.as_() {
+            let y = 5.5.as_() - x;
+            return y
+                .fmuladd(-12.0.as_(), 12.0.as_())
+                .fmuladd(y, 66.0.as_())
+                .fmuladd(y, 220.0.as_())
+                .fmuladd(y, 495.0.as_())
+                .fmuladd(y, 792.0.as_())
+                .fmuladd(y, 924.0.as_())
+                .fmuladd(y, 792.0.as_())
+                .fmuladd(y, 495.0.as_())
+                .fmuladd(y, 220.0.as_())
+                .fmuladd(y, 66.0.as_())
+                .fmuladd(y, 12.0.as_())
+                .fmuladd(y, F::ONE);
+        }
+
+        if x < 6.5.as_() {
+            let y = 6.5.as_() - x;
+            return y.powi(12);
+        }
+
+        F::ZERO
+    }
+
+    fn radius() -> Self::Float {
+        6.5.as_()
     }
 }

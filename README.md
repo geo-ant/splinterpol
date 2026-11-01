@@ -1,7 +1,7 @@
 # splinterpol
 
-Rust-native 1D and 2D spline interpolation. No-alloc and no-std compatible,
-fast and accurate.
+Rust-native 1D and 2D spline interpolation up to degree 12. No-alloc and
+no-std compatible, fast and accurate.
 
 !! TODO BADGES
 
@@ -44,7 +44,7 @@ similar purposes:
 
 * [`interpn`](https://docs.rs/interpn/latest/interpn/): an excellent crate and
   in many ways an inspiration for `splinterpol`. While `splinterpol` restricts
-  itself to 1D and 2D interpolation of spline orders up to 11 !!!TODO MAKE SURE THIS IS RIGHT!!!
+  itself to 1D and 2D interpolation of spline orders up to 12!!!TODO MAKE SURE THIS IS RIGHT!!!
   on regular grids, `interpn` offers n-dimensional interpolation on regular and
   rectilinear grids but restricts itself to interpolation order 3 or less. Both
   crates are no-alloc and no-std compatible and should be well suited even for

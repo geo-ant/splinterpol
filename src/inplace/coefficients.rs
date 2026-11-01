@@ -1,6 +1,3 @@
-use core::iter::Sum;
-use num_traits::{ConstOne, ConstZero, Float};
-
 use crate::Error;
 use crate::RowMajor;
 use crate::{
@@ -10,6 +7,8 @@ use crate::{
     iter_utils::{BlockedStridedSliceMut, StridedSliceMut},
     numerics::{FloatVector, FusedMuladd},
 };
+use core::iter::Sum;
+use num_traits::{ConstOne, ConstZero, Float};
 
 /// Calculate the spline coefficients for the given `bspline` _in place_. This
 /// overwrites the input array with the coefficients necessary to perform
@@ -86,8 +85,8 @@ use crate::{
 ///
 /// ## References
 ///
-/// * [b&m](https://www.ipol.im/pub/art/2018/221/) t. briand, p. monasse: "theory
-///   and practice of image b-spline interpolation"
+/// * [B&M](https://www.ipol.im/pub/art/2018/221/) t. briand, p. monasse: "Theory
+///   and Practice of Image B-spline Interpolation"
 /// * [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
 pub fn coefficients2d_blocked<
     B,
