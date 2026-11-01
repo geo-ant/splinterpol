@@ -1,12 +1,20 @@
 #[cfg(test)]
 mod test;
 
-/// Describes a way to extend the signal beyond the measured domain in a way
-/// that can be _transmitted_ like described in section 3.2.2 of the
-/// Briand & Monasse paper (cf also Algorithm 5 therein). Note, for example,
-/// that constant extension can _not_ be written as a transmittable boundary
-/// condition. Only transmittable boundary conditions can be used for in-place
-/// coefficient calculation.
+/// Describes a way to extend the signal beyond the measured domain. In
+/// particular these particular conditions is what B&M call _transmitted_
+/// c.f section 3.2.2 in B&M and Algorithm 5 therein. These kinds of boundary
+/// conditions enable calculations to be performed completely _in-place_
+/// in the orignal image.
+///
+/// Note, for example, that constant extension can _not_ be written as a
+/// transmittable boundary condition. Only transmittable boundary conditions
+/// can be used for in-place coefficient calculation and interpolation.
+///
+/// ## References
+///
+/// * [B&M](https://www.ipol.im/pub/art/2018/221/) T. Briand, P. Monasse: "Theory
+/// and Practice of Image B-Spline Interpolation"
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum InplaceBoundaryExtension {

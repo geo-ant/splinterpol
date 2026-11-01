@@ -16,9 +16,10 @@ mod test;
 ///
 /// The function accepts the 2D B-Spline coefficients `coeffs2d` in row-major
 /// order, that should have been calculated with
-/// [`coefficients2d`](crate::inplace::coefficients2d) or
-/// [`coefficients2d_blocked`](`crate::inplace::coefficients2d_blocked`) using
-/// the same `bspline` and `boundary_extension` arguments.
+/// [`coefficients2d_blocked`](`crate::inplace::coefficients2d_blocked`), or
+/// equivalently using the builder interface
+/// [`Coefficients2d`](crate::inplace::Coefficients2d), with the same `bspline`
+/// and `boundary_extension` arguments.
 pub fn interp2d_single<const NW: usize, B>(
     bspline: B,
     coeffs2d: RowMajor<&[B::Float]>,

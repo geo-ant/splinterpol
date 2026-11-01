@@ -12,7 +12,7 @@ use crate::{
     inplace::{
         coefficients::apply_exponential_filter_in_place_1d,
         coefficients::apply_exponential_filter_in_place_1d_iter, coefficients::causal_blocked,
-        coefficients2d, coefficients2d_blocked,
+        coefficients2d_blocked,
     },
     iter_utils::StridedSliceMut,
     parametrized_test,
@@ -769,7 +769,7 @@ fn test_coefficients2d_bspline3(
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => coefficients2d(bspline, image_data, epsilon, ext),
+            (1, 1) => coefficients2d_blocked::<_, _, 1, 1>(bspline, image_data, epsilon, ext),
             (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(bspline, image_data, epsilon, ext),
             (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(bspline, image_data, epsilon, ext),
             (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(bspline, image_data, epsilon, ext),

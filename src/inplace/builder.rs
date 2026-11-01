@@ -7,6 +7,9 @@ use crate::{
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
+#[cfg(test)]
+mod test;
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 /// Higher-level interface to spline-interpolation of 2D images. Construct
 /// an instance of this by using the builder pattern in the example below.
@@ -21,12 +24,12 @@ use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive
 /// # use spleen::*;
 /// use spleen::bspline::*;
 /// use spleen::inplace::SplineInterpolator2d;
-/// use spleen::inplace::TransmittableBoundaryExtension::*;
+/// use spleen::inplace::InplaceBoundaryExtension::*;
 /// # let mut data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
+/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
 /// # let image_data = RowMajor {data, width, height};
 ///
 /// let interp = SplineInterpolator2d::new(BSpline3::new())
@@ -236,7 +239,9 @@ where
 /// This is purely a convenience type that acts as a builder to make the
 /// calls to [`crate::inplace::coefficients2d`] and [`crate::inplace::coefficients2d_blocked`]
 /// less awkward to write. It performs _no setup at all_ and only acts as pure
-/// syntax sugar to the method calls.
+/// syntax sugar to the method calls. There is no advantage or disadvantage
+/// in terms of computation to using this pattern for coefficient calculation.
+/// The only advantage is nicer syntax.
 ///
 /// ## Examples
 ///
@@ -254,12 +259,12 @@ where
 /// # let epsilon = 1e-1;
 /// # let width = NonZero::new(9).unwrap();
 /// # let height = NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
+/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
-/// // using the rather awkward function call
-/// inplace::coefficients2d::<_,_>(BSpline3::new(),
+/// // using the rather awkward function call with unit block sizes
+/// inplace::coefficients2d_blocked::<_,_,1,1>(BSpline3::new(),
 ///                              RowMajor {
 ///                                data: &mut data1,
 ///                                width,
@@ -267,7 +272,6 @@ where
 ///                              },
 ///                              epsilon,
 ///                              extension).unwrap();
-///
 ///
 /// // using the builder
 /// inplace::Coefficients2d::new(BSpline3::new())
@@ -298,7 +302,7 @@ where
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
+/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
@@ -311,7 +315,6 @@ where
 ///                              },
 ///                              epsilon,
 ///                              extension).unwrap();
-///
 ///
 /// // using the builder
 /// inplace::Coefficients2d::new(BSpline3::<f64>::new())
@@ -357,7 +360,8 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize>
     Coefficients2d<NPOLES, B, RB, 1>
 {
     #[inline(always)]
-    /// set the column blocksize for calculation to this nonzero compile time value
+    /// Set the column blocksize for calculation to this nonzero compile time value.
+    /// Defaults to `1` if not given.
     pub fn with_column_blocksize<const CB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
         const { assert!(CB > 0) };
         let Self { bspline } = self;
@@ -369,7 +373,8 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const CB: usize>
     Coefficients2d<NPOLES, B, 1, CB>
 {
     #[inline(always)]
-    /// set the row blocksize for calculation to this nonzero compile time value
+    /// Set the row blocksize for calculation to this nonzero compile time value
+    /// Defaults to `1` if not given.
     pub fn with_row_blocksize<const RB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
         const { assert!(RB > 0) };
         let Self { bspline } = self;
@@ -383,8 +388,8 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB
     #[inline(always)]
     /// perform the computation. Again, this is just syntax sugar for
     /// [`crate::inplace::coefficients2d_blocked`] calls with the same arguments.
-    /// There is no advantage or disadvantage in terms of computation in using
-    /// this builder pattern. The only advantage is nicer syntax.
+    /// Please consult its documentation for the meaning of the parameters
+    /// and some guidance.
     pub fn compute(
         self,
         image_data: RowMajor<&mut [B::Float]>,

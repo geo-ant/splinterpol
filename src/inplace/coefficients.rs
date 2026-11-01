@@ -101,8 +101,8 @@ where
 ///
 /// ## References
 ///
-/// * [B&M](https://www.ipol.im/pub/art/2018/221/) T. Briand, P. Monasse: "Theory
-/// and Practice of Image B-Spline Interpolation"
+/// * [b&m](https://www.ipol.im/pub/art/2018/221/) t. briand, p. monasse: "theory
+///   and practice of image b-spline interpolation"
 /// * [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
 pub fn coefficients2d_blocked<
     B,
