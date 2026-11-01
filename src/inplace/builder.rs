@@ -21,15 +21,15 @@ mod test;
 ///
 /// ```rust
 /// # fn foo() {
-/// # use spleen::*;
-/// use spleen::bspline::*;
-/// use spleen::inplace::SplineInterpolator2d;
-/// use spleen::inplace::InplaceBoundaryExtension::*;
+/// # use splinterpol::*;
+/// use splinterpol::bspline::*;
+/// use splinterpol::inplace::SplineInterpolator2d;
+/// use splinterpol::inplace::InplaceBoundaryExtension::*;
 /// # let mut data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
+/// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 /// # let image_data = RowMajor {data, width, height};
 ///
 /// let interp = SplineInterpolator2d::new(BSpline3::new())
@@ -251,15 +251,15 @@ where
 ///
 ///
 /// ```rust
-/// # use spleen::*;
-/// # use spleen::bspline::*;
-/// # use spleen::RowMajor;
+/// # use splinterpol::*;
+/// # use splinterpol::bspline::*;
+/// # use splinterpol::RowMajor;
 /// # use core::num::NonZero;
 /// # let mut some_data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = NonZero::new(9).unwrap();
 /// # let height = NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
+/// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///
@@ -296,13 +296,13 @@ where
 ///
 /// ```rust
 /// # fn foo() {
-/// # use spleen::*;
-/// # use spleen::bspline::*;
+/// # use splinterpol::*;
+/// # use splinterpol::bspline::*;
 /// # let mut some_data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();
-/// # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
+/// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 /// let mut data1 = some_data;
 /// let mut data2 = some_data;
 ///

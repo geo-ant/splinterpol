@@ -11,21 +11,6 @@ use crate::{
     numerics::{FloatVector, FusedMuladd},
 };
 
-/// This is just an alias for [`coefficients2d_blocked`](coefficients2d_blocked)
-/// with unit block sizes.
-pub fn coefficients2d<B, const NPOLES: usize>(
-    bspline: B,
-    image_data: RowMajor<&mut [B::Float]>,
-    epsilon: B::Float,
-    boundary_extension: InplaceBoundaryExtension,
-) -> Result<(), Error>
-where
-    B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-    B: BSplinePrefilter<NPOLES>,
-{
-    coefficients2d_blocked::<B, NPOLES, 1, 1>(bspline, image_data, epsilon, boundary_extension)
-}
-
 /// Calculate the spline coefficients for the given `bspline` _in place_. This
 /// overwrites the input array with the coefficients necessary to perform
 /// interpolation with the given B-Spline, see e.g.

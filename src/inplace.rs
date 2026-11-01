@@ -23,13 +23,13 @@
 //!
 //! ```rust
 //! # fn foo() {
-//! # use spleen::*;
-//! # use spleen::bspline::*;
+//! # use splinterpol::*;
+//! # use splinterpol::bspline::*;
 //! # let mut my_image_data = [10.;90];
 //! # let epsilon = 1e-1;
 //! # let width = core::num::NonZero::new(9).unwrap();
 //! # let height = core::num::NonZero::new(10).unwrap();
-//! # let extension = spleen::inplace::InplaceBoundaryExtension::Periodic;
+//! # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 //!
 //! inplace::Coefficients2d::new(BSpline3::<f64>::new())
 //!     .with_row_blocksize::<2>()

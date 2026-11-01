@@ -7,7 +7,7 @@ use rand::{
     distr::uniform::{SampleRange, SampleUniform},
     rngs::{ThreadRng, Xoshiro256PlusPlus},
 };
-use spleen::{
+use splinterpol::{
     bench_exports::apply_exponential_filter_in_place, bench_exports::compute_truncation_indices,
     inplace::InplaceBoundaryExtension,
 };

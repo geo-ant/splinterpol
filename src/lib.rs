@@ -1,6 +1,5 @@
-// TODO make this into a `deny` lint conditional on not having some feature
-// `with_unsafe` or `allow_unsafe` in there...
-#![warn(unsafe_code)]
+#![doc=include_str!("../README.md")]
+#![deny(unsafe_code)]
 #![warn(missing_docs)]
 // lesson learned from interpn: needless range loops can sometimes be pretty
 // neat for performance
