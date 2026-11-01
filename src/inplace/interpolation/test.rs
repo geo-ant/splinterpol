@@ -97,7 +97,7 @@ macro_rules! gen_bspline_test {
 // a range of image from the imagej sample images covering cells, brain mri,
 // photos and such.
 gen_bspline_test! {
-#[splines(BSpline3<f64>,BSpline4<f64>,BSpline5<f64>,BSpline6<f64>,
+#[splines(BSpline2<f64>,BSpline3<f64>,BSpline4<f64>,BSpline5<f64>,BSpline6<f64>,
     BSpline7<f64>,BSpline9<f64>,BSpline10<f64>,BSpline11<f64>,
     BSpline12<f64>)]
 // NOTE(geo): see also below. The B&M paper specificies `epsilon` as

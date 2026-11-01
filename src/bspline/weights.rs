@@ -20,6 +20,44 @@ pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
     /// The radius of the B-Spline support. This is always
     /// `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
+    //TODO!
+    fn weights(self, t: Self::Float) -> [Self::Float; NWEIGHTS];
+}
+
+impl<F> BSplineWeights<3> for BSpline2<F>
+where
+    F: Float + 'static + ConstOne + ConstZero,
+    f64: AsPrimitive<F>,
+{
+    #[inline(always)]
+    fn eval(self, x: Self::Float) -> Self::Float {
+        let x = x.abs();
+        if x < 0.5.as_() {
+            let y = x;
+            return 1.5.as_() - 2.0.as_() * (y).powi(2);
+        }
+        if x < 1.5.as_() {
+            let y = 1.5.as_() - x;
+            return (y).powi(2);
+        }
+        F::ZERO
+    }
+
+    #[inline(always)]
+    fn radius() -> Self::Float {
+        1.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 3] {
+        debug_assert!(t >= 0.5.as_() && t <= 1.5.as_());
+
+        let q = t - 0.5.as_();
+        let s = F::ONE - q;
+        let z = t - F::ONE;
+
+        [s * s, (z * z).fmuladd(-2.0.as_(), 1.5.as_()), q * q]
+    }
 }
 
 impl<F> BSplineWeights<4> for BSpline3<F>
@@ -48,6 +86,24 @@ where
     #[inline]
     fn radius() -> Self::Float {
         Self::Float::ONE + Self::Float::ONE
+    }
+
+    #[inline(always)]
+    fn weights(self, t: F) -> [F; 4] {
+        debug_assert!(t >= F::ONE && t <= 2.0.as_());
+
+        let q = t - F::ONE;
+        let s = F::ONE - q;
+        let q2 = q * q;
+        let s2 = s * s;
+        let three_q = q * 3.0.as_();
+
+        [
+            s2 * s,
+            q2.fmuladd(three_q - 6.0.as_(), 4.0.as_()),
+            s2.fmuladd(-three_q - 3.0.as_(), 4.0.as_()),
+            q2 * q,
+        ]
     }
 }
 
@@ -93,6 +149,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         2.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 5] {
+        todo!()
     }
 }
 
@@ -140,6 +201,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         3.0.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 6] {
+        todo!()
     }
 }
 
@@ -193,6 +259,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         3.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 7] {
+        todo!()
     }
 }
 
@@ -251,6 +322,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         4.0.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 8] {
+        todo!()
     }
 }
 
@@ -320,6 +396,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         4.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 9] {
+        todo!()
     }
 }
 
@@ -395,6 +476,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         5.0.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 10] {
+        todo!()
     }
 }
 
@@ -487,6 +573,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         5.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 11] {
+        todo!()
     }
 }
 
@@ -584,6 +675,11 @@ where
     #[inline]
     fn radius() -> Self::Float {
         6.0.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 12] {
+        todo!()
     }
 }
 
@@ -701,7 +797,13 @@ where
         F::ZERO
     }
 
+    #[inline]
     fn radius() -> Self::Float {
         6.5.as_()
+    }
+
+    #[inline(always)]
+    fn weights(self, t: Self::Float) -> [Self::Float; 13] {
+        todo!()
     }
 }

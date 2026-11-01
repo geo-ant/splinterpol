@@ -35,8 +35,8 @@ where
     let fr0 = (row - B::radius()).ceil();
     let c0 = fc0.to_isize().ok_or(Error::Unrepresentable)?;
     let r0 = fr0.to_isize().ok_or(Error::Unrepresentable)?;
-    let wx = compute_weights(bspline, col - fc0).ok_or(Error::Unrepresentable)?;
-    let wy = compute_weights(bspline, row - fr0).ok_or(Error::Unrepresentable)?;
+    let wx = bspline.weights(col - fc0);
+    let wy = bspline.weights(row - fr0);
 
     // let patch = get_row_patch::<NW, _>(coeffs, width, height, ix, iy, boundary_extension);
 
@@ -78,7 +78,7 @@ where
 {
     let fx0 = (pos - B::radius()).ceil();
     let x0 = fx0.to_isize().ok_or(Error::Unrepresentable)?;
-    let w = compute_weights(bspline, pos - fx0).ok_or(Error::OutOfBounds)?;
+    let w = bspline.weights(pos - fx0);
     let c = get_row_patch::<NW, _>(coeffs, x0, boundary_extension);
 
     Ok(c.dot(w))
