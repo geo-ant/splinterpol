@@ -1,13 +1,19 @@
 # splinterpol
 
-Rust-native 1D and 2D spline interpolation up to degree 12. No-alloc and
-no-std compatible, fast and accurate.
+Rust-native 1D and 2D spline interpolation up to degree 12. Fast, accurate, and
+no-std and no-alloc compatible.
 
 !! TODO BADGES
 
 ## Overview
 
+## Allocation and Unsafe Code Policy
 
+* No allocations.
+* Safe by default.
+
+Later versions of the library will make additional functionality that require
+unsafe code _opt-in_ via feature gates.
 
 ## Features and Performance
 
@@ -50,8 +56,9 @@ similar purposes:
   crates are no-alloc and no-std compatible and should be well suited even for
   resource constrained environments.
 * [`ninterp`](https://docs.rs/ninterp/latest/ninterp/): offers n-dimensional
-  interpolation up to 3rd order on rectilinear grids. Is no-std compatible, but
+  interpolation up to 3rd order on rectilinear grids. It's no-std compatible, but
   isn't no-alloc and introduces `ndarray` as a dependency.
 * [ndarray-interp]: TODO
-* [gridr]: TODO
+* [gridr](https://crates.io/crates/gridr): Standalone crate which is the backend
+  to a larger [python library](https://github.com/CNES/gridr).
 

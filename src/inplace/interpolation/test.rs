@@ -1,6 +1,3 @@
-#![allow(unsafe_code)]
-use std::{fs::File, io::Write};
-
 use crate::RowMajor;
 use crate::inplace::builder::SplineInterpolator2d;
 use crate::test_utils::iter_cross;
@@ -259,19 +256,6 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
         .max_by(|a, b| T::total_cmp(&a, &b))
         .unwrap()
         .abs();
-
-    let mut w = File::create(format!(
-        "debug_image_{}x{}.double.raw",
-        image.width, image.height
-    ))
-    .unwrap();
-    unsafe {
-        let as_bytes = core::slice::from_raw_parts(
-            image.data.as_ptr() as *const u8,
-            core::mem::size_of_val(image.data.as_slice()),
-        );
-        w.write_all(as_bytes).unwrap();
-    }
 
     assert!(fmax.is_finite());
     let data = image.clone();

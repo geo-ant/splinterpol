@@ -90,7 +90,6 @@ where
             // NOTE: this works without panic checks in the tight loop of
             // the exponential filter but it's ugly due to the unwrap
             .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
-        // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
@@ -98,20 +97,14 @@ where
         self.data
             .chunks_exact(self.stride.get())
             .rev()
-            // TODO:check whether unwrap is optimized out
             .map(move |block| block.first_chunk::<BLOCKSIZE>().unwrap())
-        // // NOTE this doesn't get optimized to the same assembly
-        // .flat_map(move |block| unsafe { block.first_chunk::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
     fn strided_iter_mut(&mut self) -> impl Iterator<Item = &mut Self::Item> {
         self.data
             .chunks_exact_mut(self.stride.get())
-            // TODO:check whether unwrap is optimized out
             .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
-        // // NOTE this doesn't get optimized to the same assembly
-        // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
 
     #[inline(always)]
@@ -119,9 +112,7 @@ where
         self.data
             .chunks_exact_mut(self.stride.get())
             .rev()
-            // TODO check whether unwrap is optimized out, otherwise use unwrap unchecked
             .map(move |block| block.first_chunk_mut::<BLOCKSIZE>().unwrap())
-        // .flat_map(move |block| unsafe { block.first_chunk_mut::<BLOCKSIZE>() })
     }
 
     #[inline(always)]

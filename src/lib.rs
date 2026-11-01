@@ -1,5 +1,4 @@
 #![doc=include_str!("../README.md")]
-#![deny(unsafe_code)]
 #![warn(missing_docs)]
 // lesson learned from interpn: needless range loops can sometimes be pretty
 // neat for performance
@@ -11,7 +10,7 @@
     clippy::panic,
     clippy::panic_in_result_fn,
     clippy::panicking_unwrap,
-    // unsafe_code,
+    unsafe_code,
     clippy::alloc_instead_of_core
 )]
 
