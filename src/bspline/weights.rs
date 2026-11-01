@@ -21,7 +21,7 @@ pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
     /// `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
     //TODO!
-    fn weights(self, t: Self::Float) -> [Self::Float; NWEIGHTS];
+    fn weights(t: Self::Float) -> [Self::Float; NWEIGHTS];
 }
 
 impl<F> BSplineWeights<3> for BSpline2<F>
@@ -49,7 +49,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 3] {
+    fn weights(t: Self::Float) -> [Self::Float; 3] {
         debug_assert!(t >= 0.5.as_() && t <= 1.5.as_());
 
         let q = t - 0.5.as_();
@@ -89,7 +89,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: F) -> [F; 4] {
+    fn weights(t: F) -> [F; 4] {
         debug_assert!(t >= F::ONE && t <= 2.0.as_());
 
         let q = t - F::ONE;
@@ -152,7 +152,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 5] {
+    fn weights(t: Self::Float) -> [Self::Float; 5] {
         todo!()
     }
 }
@@ -204,7 +204,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 6] {
+    fn weights(t: Self::Float) -> [Self::Float; 6] {
         todo!()
     }
 }
@@ -262,7 +262,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 7] {
+    fn weights(t: Self::Float) -> [Self::Float; 7] {
         todo!()
     }
 }
@@ -325,7 +325,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 8] {
+    fn weights(t: Self::Float) -> [Self::Float; 8] {
         todo!()
     }
 }
@@ -399,7 +399,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 9] {
+    fn weights(t: Self::Float) -> [Self::Float; 9] {
         todo!()
     }
 }
@@ -479,7 +479,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 10] {
+    fn weights(t: Self::Float) -> [Self::Float; 10] {
         todo!()
     }
 }
@@ -576,7 +576,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 11] {
+    fn weights(t: Self::Float) -> [Self::Float; 11] {
         todo!()
     }
 }
@@ -678,7 +678,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 12] {
+    fn weights(t: Self::Float) -> [Self::Float; 12] {
         todo!()
     }
 }
@@ -803,7 +803,7 @@ where
     }
 
     #[inline(always)]
-    fn weights(self, t: Self::Float) -> [Self::Float; 13] {
+    fn weights(t: Self::Float) -> [Self::Float; 13] {
         todo!()
     }
 }

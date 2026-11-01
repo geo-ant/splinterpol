@@ -93,7 +93,7 @@ def compute_piecewise_betan(n: int) -> list[PolyPiece]:
         else:
             coefficients = [
                 compute_cnkj(n, k, j) for j in range(n + 1)
-            ]
+           ]
 
         expression = sum(
             sp.Rational(c.numerator, c.denominator) * y**j
@@ -105,6 +105,72 @@ def compute_piecewise_betan(n: int) -> list[PolyPiece]:
 
     return pieces        
 
+# I realized I was doing something suboptimal, let me explain: I'm calculating
+# the weights by first finding the "left hand" coordinate as t = x - (x-R).ceil()
+# (this is true for x and y coordinates, I'll just use x here). Where R is the
+# radius of the B-Spline support R = (n+1)/2. Then I'm filling
+# an array of weights by repeatedly calling the eval function with:
+# [eval(t-0), eval(t-1), ..., eval(t-(NW-1))] where NW is the number of weights
+# for that B-Spline (which is n+1, where n is the degree of the B-Spline).
+# The eval function uses branching logic depending on where it's argument falls,
+# to find the right piece of the polynomial. Filling the array like I did by
+# repeatedly calling eval is a bit stupid because I have to repeatedly pass
+# the branching logic, unless the compiler can understand that there is only
+# ever one branch for any particular t-m branch. Why is that?
+#
+# The reason is that by defintion t = x - (x-R).ceil(). The term (x-R).ceil()
+# is in the range [x-R,x-R+1]. That means t \in [R-1,R], i.e. t \in [(n-1)/2,(n+1)/2].
+# That means we know the possible range for each t - m expression, m = 0,...,NW-1
+# which should give us a way to pick the correct branch at compile time for
+# each eval(t-m) and then generate a function that returns the array of weights
+# directly PROVIDED THAT IT WAS INDEED CALLED WITH the correct t argument.
+#
+# This function takes the piecewise beta(n) and re
+def compute_weight_array(betan: list[PolyPiece], n: int) -> list[sp.Expr]:
+    """Return expressions for [eval(t), eval(t-1), ..., eval(t-n)]."""
+    if n < 1 or len(betan) != n // 2 + 1:
+        raise ValueError("wrong number of polynomial pieces")
+
+    t = sp.Symbol("t")
+    t_lower = frac(n - 1, 2)
+    t_upper = frac(n + 1, 2)
+    weights = []
+
+    for m in range(n + 1):
+        arg = t - m
+        cur_lower = t_lower - m
+        cur_upper = t_upper - m
+
+        # cur_lower < arg <= cur_upper, but eval branches on |arg| (the
+        # absolute value) and here |cur_lower| might be larger than |cur_upper|
+        # so we have to pick the correct piece that covers the range
+        abs_upper = max(abs(cur_lower), abs(cur_upper))
+        piece = next(p for p in betan if abs_upper <= p.upper_limit)
+
+        if cur_lower < 0 < cur_upper:
+            # arg can have either sign. This only happens in the central
+            # slot of an even-degree spline. Its polynomial contains only
+            # even powers, so P(arg) == P(abs(arg)).
+            local_y = arg
+        else:
+            # arg has a known sign throughout this slot, possibly reaching
+            # zero at an endpoint. We can resolve abs(arg) during code generation.
+            abs_arg = -arg if cur_upper <= 0 else arg
+
+            # The central polynomial takes abs(arg) directly; the outer
+            # polynomials take the distance from their upper limit.
+            if piece is betan[0]:
+                local_y = abs_arg
+            else:
+                local_y = sp.Rational(piece.upper_limit) - abs_arg
+
+        # y is the polynomial running variable, see above. That's why
+        # we use local_y above
+        y = piece.poly.gens[0]
+        polynomial = sp.horner(piece.poly.as_expr(), y)
+        weights.append(polynomial.subs(y, local_y))
+
+    return weights
 
 # heavily LLM assisted with the implementation here, my python
 # is too crappy for pretty printing rust code...

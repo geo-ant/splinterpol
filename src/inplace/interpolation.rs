@@ -20,8 +20,7 @@ mod test;
 /// equivalently using the builder interface
 /// [`Coefficients2d`](crate::inplace::Coefficients2d), with the same `bspline`
 /// and `boundary_extension` arguments.
-pub fn interp2d_single<const NW: usize, B>(
-    bspline: B,
+pub fn interp2d_single<B, const NW: usize>(
     coeffs2d: RowMajor<&[B::Float]>,
     boundary_extension: InplaceBoundaryExtension,
     // NOTE: just keep in mind that `x` is the column-index and `y` is the row index
@@ -35,8 +34,8 @@ where
     let fr0 = (row - B::radius()).ceil();
     let c0 = fc0.to_isize().ok_or(Error::Unrepresentable)?;
     let r0 = fr0.to_isize().ok_or(Error::Unrepresentable)?;
-    let wx = bspline.weights(col - fc0);
-    let wy = bspline.weights(row - fr0);
+    let wx = B::weights(col - fc0);
+    let wy = B::weights(row - fr0);
 
     // let patch = get_row_patch::<NW, _>(coeffs, width, height, ix, iy, boundary_extension);
 
@@ -67,7 +66,6 @@ where
 
 #[inline]
 pub fn interp1d_single<const NW: usize, B>(
-    bspline: B,
     coeffs: &[B::Float],
     pos: B::Float,
     boundary_extension: InplaceBoundaryExtension,
@@ -78,7 +76,7 @@ where
 {
     let fx0 = (pos - B::radius()).ceil();
     let x0 = fx0.to_isize().ok_or(Error::Unrepresentable)?;
-    let w = bspline.weights(pos - fx0);
+    let w = B::weights(pos - fx0);
     let c = get_row_patch::<NW, _>(coeffs, x0, boundary_extension);
 
     Ok(c.dot(w))

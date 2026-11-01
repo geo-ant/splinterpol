@@ -211,8 +211,7 @@ impl<B, C> SplineInterpolator2d<B, C> {
     {
         let width = self.coeffs.width;
         let height = self.coeffs.height;
-        interp2d_single(
-            self.bspline,
+        interp2d_single::<B, _>(
             RowMajor {
                 data: self.coeffs.as_ref(),
                 width,
