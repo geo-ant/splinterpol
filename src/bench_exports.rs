@@ -1,4 +1,4 @@
-use crate::{Error, inplace::TransmittableBoundaryExtension, numerics::FusedMuladd};
+use crate::{Error, inplace::InplaceBoundaryExtension, numerics::FusedMuladd};
 use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float};
 
@@ -19,7 +19,7 @@ pub fn apply_exponential_filter_in_place<F, const BLOCKSIZE: usize>(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
@@ -47,7 +47,7 @@ pub fn apply_exponential_filter_in_place_iter<F>(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,

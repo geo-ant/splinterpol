@@ -1,7 +1,7 @@
 use crate::{
     RowMajor,
     bspline::BSpline3,
-    inplace::{SplineInterpolator2d, TransmittableBoundaryExtension},
+    inplace::{InplaceBoundaryExtension, SplineInterpolator2d},
     test_utils::read_f32le_asf64,
 };
 
@@ -11,109 +11,109 @@ use test_case::test_case;
     "test-assets/imagej/blobs_256x254.f32.raw",
     256,
     254,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/blobs_256x254.f32.raw",
     256,
     254,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/blobs_256x254.f32.raw",
     256,
     254,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case(
     "test-assets/imagej/boats_720x576.f32.raw",
     720,
     576,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/boats_720x576.f32.raw",
     720,
     576,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/boats_720x576.f32.raw",
     720,
     576,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case(
     "test-assets/imagej/clown_320x200.f32.raw",
     320,
     200,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/clown_320x200.f32.raw",
     320,
     200,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/clown_320x200.f32.raw",
     320,
     200,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case(
     "test-assets/imagej/fly-brain_256x256.f32.raw",
     256,
     256,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/fly-brain_256x256.f32.raw",
     256,
     256,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/fly-brain_256x256.f32.raw",
     256,
     256,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case(
     "test-assets/imagej/gel_276x467.f32.raw",
     276,
     467,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/gel_276x467.f32.raw",
     276,
     467,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/gel_276x467.f32.raw",
     276,
     467,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case(
     "test-assets/imagej/mri_186x226.f32.raw",
     186,
     226,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case(
     "test-assets/imagej/mri_186x226.f32.raw",
     186,
     226,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case(
     "test-assets/imagej/mri_186x226.f32.raw",
     186,
     226,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 // NOTE(geo): see the interpolation tests and documentation. Our epsilon
 // is actually a relative bound, but here we want to compare the ABSOLUTE error
@@ -129,7 +129,7 @@ fn absolute_accuracy_on_gridpoints_vs_interpn(
     image_path: &str,
     width: usize,
     height: usize,
-    ext: TransmittableBoundaryExtension,
+    ext: InplaceBoundaryExtension,
 ) {
     let original = read_f32le_asf64(image_path);
     let epsilon = 1e-13;

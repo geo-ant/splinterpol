@@ -1,7 +1,7 @@
 use crate::{
     Error, RowMajor,
     bspline::{BSpline, BSplinePrefilter, BSplineWeights},
-    inplace::{TransmittableBoundaryExtension, interp2d_single},
+    inplace::{InplaceBoundaryExtension, interp2d_single},
     numerics::FusedMuladd,
 };
 use core::iter::Sum;
@@ -68,7 +68,7 @@ pub struct SplineInterpolator2d<B, C> {
     // make the construction of this guy follow a builder pattern, which
     // makes for some pretty ugly generic, with very nice usage.
     coeffs: RowMajor<C>,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 }
 
 /// This is just an intermediate structure on the way to configuring and
@@ -76,7 +76,7 @@ pub struct SplineInterpolator2d<B, C> {
 pub struct SplineInterpBuilder2d<B, C, const RB: usize, const CB: usize> {
     bspline: B,
     coeffs: C,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 }
 
 impl SplineInterpolator2d<(), ()> {
@@ -87,7 +87,7 @@ impl SplineInterpolator2d<(), ()> {
         SplineInterpBuilder2d {
             bspline,
             coeffs: (),
-            boundary_extension: TransmittableBoundaryExtension::WholeSymmetric,
+            boundary_extension: InplaceBoundaryExtension::WholeSymmetric,
         }
     }
 }
@@ -132,7 +132,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder2d<B, (), RB, CB> {
     /// Set the boundary extension method used by the interpolator. If this
     /// method is not invoked, the whole-symmetric extension is used. Obviously,
     /// this must be called before the call to [`compute`](Self::compute).
-    pub fn extension(self, boundary_extension: TransmittableBoundaryExtension) -> Self {
+    pub fn extension(self, boundary_extension: InplaceBoundaryExtension) -> Self {
         Self {
             boundary_extension,
             ..self
@@ -389,7 +389,7 @@ impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB
         self,
         image_data: RowMajor<&mut [B::Float]>,
         epsilon: B::Float,
-        boundary_extension: TransmittableBoundaryExtension,
+        boundary_extension: InplaceBoundaryExtension,
     ) -> Result<(), Error>
     where
         B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,

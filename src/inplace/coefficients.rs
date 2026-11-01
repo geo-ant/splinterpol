@@ -5,7 +5,7 @@ use crate::Error;
 use crate::RowMajor;
 use crate::{
     bspline::BSplinePrefilter,
-    inplace::TransmittableBoundaryExtension,
+    inplace::InplaceBoundaryExtension,
     internal::compute_truncation_indices,
     iter_utils::{BlockedStridedSliceMut, StridedSliceMut},
     numerics::{FloatVector, FusedMuladd},
@@ -17,7 +17,7 @@ pub fn coefficients2d<B, const NPOLES: usize>(
     bspline: B,
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
@@ -113,7 +113,7 @@ pub fn coefficients2d_blocked<
     bspline: B,
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum,
@@ -258,7 +258,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d<F, const BLOCKSIZE: usize>(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
@@ -286,7 +286,7 @@ where
     let s_lini = {
         let signal_first = signal.first().copied().ok_or(Error::NotEnoughData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Reflected => {
+            InplaceBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -301,7 +301,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
                 for s in signal.iter().copied().skip(1).take(truncation_idx) {
@@ -310,7 +310,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
                 for s in signal.iter().rev().copied().take(truncation_idx) {
@@ -444,7 +444,7 @@ where
     let s_lend = {
         let signal_last = signal.last().copied().ok_or(Error::NotEnoughData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_last;
                 let mut pow = F::ONE;
                 for s in signal.iter().copied().take(truncation_idx) {
@@ -453,8 +453,8 @@ where
                 }
                 -alpha * acc
             }
-            TransmittableBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_last,
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_last,
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal
                     .get(signal.len() - 2)
                     .copied()
@@ -581,7 +581,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d_iter<S, F>(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: Float + ConstOne + ConstZero + Sum + FusedMuladd,
@@ -610,7 +610,7 @@ where
     let s_lini = {
         let signal_first = signal.strided_first().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Reflected => {
+            InplaceBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -625,7 +625,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
                 for s in signal.strided_iter().copied().skip(1).take(truncation_idx) {
@@ -634,7 +634,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_first;
                 let mut pow = F::ONE;
                 for s in signal.strided_iter_rev().copied().take(truncation_idx) {
@@ -722,7 +722,7 @@ where
     let s_lend = {
         let signal_end = signal.strided_last().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_end;
                 let mut pow = F::ONE;
                 for s in signal.strided_iter().copied().take(truncation_idx) {
@@ -731,8 +731,8 @@ where
                 }
                 -alpha * acc
             }
-            TransmittableBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_end,
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::Reflected => alpha / (alpha - F::ONE) * signal_end,
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal.strided_2nd_last().ok_or(Error::NotEnoughData)?;
                 alpha / (alpha * alpha - F::ONE) * (signal_end + alpha * signal_2nd_to_last)
             }
@@ -781,7 +781,7 @@ pub(crate) fn apply_exponential_filter_in_place_1d_iter_vector<S, F>(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<(), Error>
 where
     F: FloatVector,
@@ -811,7 +811,7 @@ where
     let s_lini = {
         let signal_first = signal.strided_first().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Reflected => {
+            InplaceBoundaryExtension::Reflected => {
                 // NOTE: this is true for all the boundary code. I'm reusing the
                 // same logic of recursively calculating a^j = a * a^(j-1) that
                 // the reference C-code uses. If I use a^j = a.powi(j), I might
@@ -827,7 +827,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let mut acc = signal_first;
                 let mut pow = F::Scalar::ONE;
                 for s in signal.strided_iter().copied().skip(1).take(truncation_idx) {
@@ -837,7 +837,7 @@ where
                 }
                 acc
             }
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_first;
                 let mut pow = F::Scalar::ONE;
                 for s in signal.strided_iter_rev().copied().take(truncation_idx) {
@@ -926,7 +926,7 @@ where
     let s_lend = {
         let signal_end = signal.strided_last().ok_or(Error::NoData)?;
         match boundary_extension {
-            TransmittableBoundaryExtension::Periodic => {
+            InplaceBoundaryExtension::Periodic => {
                 let mut acc = signal_end;
                 let mut pow = F::Scalar::ONE;
                 for s in signal.strided_iter().copied().take(truncation_idx) {
@@ -936,10 +936,10 @@ where
                 }
                 acc.scal(-alpha)
             }
-            TransmittableBoundaryExtension::Reflected => {
+            InplaceBoundaryExtension::Reflected => {
                 signal_end.scal(alpha / (alpha - F::Scalar::ONE))
             }
-            TransmittableBoundaryExtension::WholeSymmetric => {
+            InplaceBoundaryExtension::WholeSymmetric => {
                 let signal_2nd_to_last = signal.strided_2nd_last().ok_or(Error::NotEnoughData)?;
                 signal_2nd_to_last
                     .axpy(alpha, signal_end)

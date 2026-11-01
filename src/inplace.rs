@@ -14,7 +14,7 @@ pub(crate) mod interpolation;
 
 pub mod boundary;
 
-pub use boundary::TransmittableBoundaryExtension;
+pub use boundary::InplaceBoundaryExtension;
 pub use builder::Coefficients2d;
 pub use builder::SplineInterpolator2d;
 pub use coefficients::coefficients2d;

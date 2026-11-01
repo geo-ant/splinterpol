@@ -1,6 +1,6 @@
 use crate::RowMajor;
 use crate::{
-    Error, bspline::BSplineWeights, inplace::TransmittableBoundaryExtension, numerics::FloatVector,
+    Error, bspline::BSplineWeights, inplace::InplaceBoundaryExtension, numerics::FloatVector,
 };
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
@@ -22,7 +22,7 @@ mod test;
 pub fn interp2d_single<const NW: usize, B>(
     bspline: B,
     coeffs2d: RowMajor<&[B::Float]>,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
     // NOTE: just keep in mind that `x` is the column-index and `y` is the row index
     (row, col): (B::Float, B::Float),
 ) -> Result<B::Float, Error>
@@ -69,7 +69,7 @@ pub fn interp1d_single<const NW: usize, B>(
     bspline: B,
     coeffs: &[B::Float],
     pos: B::Float,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
@@ -108,7 +108,7 @@ where
 fn get_row_patch<const N: usize, F: Float + ConstZero>(
     row: &[F],
     idx: isize,
-    boundary_extension: TransmittableBoundaryExtension,
+    boundary_extension: InplaceBoundaryExtension,
 ) -> [F; N] {
     const { assert!(N > 0 && N < isize::MAX as usize) };
     debug_assert!(

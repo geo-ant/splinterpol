@@ -8,7 +8,7 @@ use std::num::NonZero;
 
 use crate::{
     bspline::{BSpline3, BSpline10},
-    inplace::TransmittableBoundaryExtension,
+    inplace::InplaceBoundaryExtension,
     inplace::{
         coefficients::apply_exponential_filter_in_place_1d,
         coefficients::apply_exponential_filter_in_place_1d_iter, coefficients::causal_blocked,
@@ -29,7 +29,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -37,7 +37,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1
 )]
 #[test_case::test_case(
@@ -45,7 +45,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1
 )]
 #[test_case::test_case(
@@ -53,7 +53,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -61,7 +61,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1
 )]
 #[test_case::test_case(
@@ -69,7 +69,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1
 )]
 #[test_case::test_case(
@@ -77,7 +77,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -85,7 +85,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1
 )]
 #[test_case::test_case(
@@ -93,7 +93,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1
 )]
 #[test_case::test_case(
@@ -101,7 +101,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1
 )]
 #[test_case::test_case(
@@ -109,7 +109,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1
 )]
 #[test_case::test_case(
@@ -117,7 +117,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1
 )]
 #[test_case::test_case(
@@ -125,7 +125,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -133,7 +133,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     2
 )]
 #[test_case::test_case(
@@ -141,7 +141,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     2
 )]
 #[test_case::test_case(
@@ -149,7 +149,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -157,7 +157,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     2
 )]
 #[test_case::test_case(
@@ -165,7 +165,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     2
 )]
 #[test_case::test_case(
@@ -173,7 +173,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -181,7 +181,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     2
 )]
 #[test_case::test_case(
@@ -189,7 +189,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     2
 )]
 #[test_case::test_case(
@@ -197,7 +197,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     2
 )]
 #[test_case::test_case(
@@ -205,7 +205,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     2
 )]
 #[test_case::test_case(
@@ -213,7 +213,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     2
 )]
 #[test_case::test_case(
@@ -221,7 +221,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -229,7 +229,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7
 )]
 #[test_case::test_case(
@@ -237,7 +237,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7
 )]
 #[test_case::test_case(
@@ -245,7 +245,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -253,7 +253,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7
 )]
 #[test_case::test_case(
@@ -261,7 +261,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7
 )]
 #[test_case::test_case(
@@ -269,7 +269,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -277,7 +277,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7
 )]
 #[test_case::test_case(
@@ -285,7 +285,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7
 )]
 #[test_case::test_case(
@@ -293,7 +293,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7
 )]
 #[test_case::test_case(
@@ -301,7 +301,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7
 )]
 #[test_case::test_case(
@@ -309,7 +309,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7
 )]
 #[test_case::test_case(
@@ -317,7 +317,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -325,7 +325,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8
 )]
 #[test_case::test_case(
@@ -333,7 +333,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8
 )]
 #[test_case::test_case(
@@ -341,7 +341,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -349,7 +349,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8
 )]
 #[test_case::test_case(
@@ -357,7 +357,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8
 )]
 #[test_case::test_case(
@@ -365,7 +365,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -373,7 +373,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8
 )]
 #[test_case::test_case(
@@ -381,7 +381,7 @@ use crate::{
     "test-assets/expfilter/data1.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8
 )]
 #[test_case::test_case(
@@ -389,7 +389,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8
 )]
 #[test_case::test_case(
@@ -397,7 +397,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8
 )]
 #[test_case::test_case(
@@ -405,7 +405,7 @@ use crate::{
     "test-assets/expfilter/data2.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8
 )]
 fn exponential_filter_reproduces_reference_results(
@@ -413,7 +413,7 @@ fn exponential_filter_reproduces_reference_results(
     expected: &str,
     truncation_index: usize,
     alpha: f64,
-    extension: TransmittableBoundaryExtension,
+    extension: InplaceBoundaryExtension,
     blocksize: usize,
 ) {
     let orig = read_f64le(data);
@@ -506,91 +506,91 @@ fn exponential_filter_reproduces_reference_results(
     "test-assets/expfilter/data1.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
     "test-assets/expfilter/data1.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
     "test-assets/expfilter/data1.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n100.hsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n100.wsym.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n100.peri.alpha-0.283.f64",
     100,
     -0.283,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
     "test-assets/expfilter/data1.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
     "test-assets/expfilter/data1.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data1.f64",
     "test-assets/expfilter/data1.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n5.hsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Reflected
+    InplaceBoundaryExtension::Reflected
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n5.peri.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::Periodic
+    InplaceBoundaryExtension::Periodic
 )]
 #[test_case::test_case(
     "test-assets/expfilter/data2.f64",
     "test-assets/expfilter/data2.filtered.n5.wsym.alpha-0.456.f64",
     5,
     -0.456,
-    TransmittableBoundaryExtension::WholeSymmetric
+    InplaceBoundaryExtension::WholeSymmetric
 )]
 fn exponential_filter_with_non_unit_stride(
     data: &str,
     expected: &str,
     truncation_index: usize,
     alpha: f64,
-    extension: TransmittableBoundaryExtension,
+    extension: InplaceBoundaryExtension,
 ) {
     const STRIDE: usize = 4;
     let orig = read_f64le(data);
@@ -642,7 +642,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1,
     1
 )]
@@ -651,7 +651,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1,
     1
 )]
@@ -660,7 +660,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1,
     1
 )]
@@ -669,7 +669,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8,
     8
 )]
@@ -678,7 +678,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8,
     8
 )]
@@ -687,7 +687,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8,
     8
 )]
@@ -696,7 +696,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     6,
     7
 )]
@@ -705,7 +705,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     6,
     7
 )]
@@ -714,7 +714,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     6,
     7
 )]
@@ -723,7 +723,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7,
     6
 )]
@@ -732,7 +732,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7,
     6
 )]
@@ -741,7 +741,7 @@ fn exponential_filter_with_non_unit_stride(
     "test-assets/coefficients2d/image_512x1024.ord3.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7,
     6
 )]
@@ -750,7 +750,7 @@ fn test_coefficients2d_bspline3(
     expected: &str,
     width: usize,
     height: usize,
-    ext: TransmittableBoundaryExtension,
+    ext: InplaceBoundaryExtension,
     row_blocksize: usize,
     col_blocksize: usize,
 ) {
@@ -800,7 +800,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     1,
     1
 )]
@@ -809,7 +809,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     1,
     1
 )]
@@ -818,7 +818,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     1,
     1
 )]
@@ -827,7 +827,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     8,
     8
 )]
@@ -836,7 +836,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     8,
     8
 )]
@@ -845,7 +845,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     8,
     8
 )]
@@ -854,7 +854,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     6,
     7
 )]
@@ -863,7 +863,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     6,
     7
 )]
@@ -872,7 +872,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     6,
     7
 )]
@@ -881,7 +881,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.hsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Reflected,
+    InplaceBoundaryExtension::Reflected,
     7,
     6
 )]
@@ -890,7 +890,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.peri.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::Periodic,
+    InplaceBoundaryExtension::Periodic,
     7,
     6
 )]
@@ -899,7 +899,7 @@ fn test_coefficients2d_bspline3(
     "test-assets/coefficients2d/image_512x1024.ord10.eps1e-05.wsym.f64",
     512,
     1024,
-    TransmittableBoundaryExtension::WholeSymmetric,
+    InplaceBoundaryExtension::WholeSymmetric,
     7,
     6
 )]
@@ -908,7 +908,7 @@ fn test_coefficients2d_bspline10(
     expected: &str,
     width: usize,
     height: usize,
-    ext: TransmittableBoundaryExtension,
+    ext: InplaceBoundaryExtension,
     row_blocksize: usize,
     col_blocksize: usize,
 ) {

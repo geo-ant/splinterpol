@@ -9,7 +9,7 @@ mod test;
 /// coefficient calculation.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
-pub enum TransmittableBoundaryExtension {
+pub enum InplaceBoundaryExtension {
     /// Signal `abcde` is extended to `...cba|abcde|edc` and is called
     /// _half-symmetric_ in the Briand & Monasse paper. In `scipy`
     /// this is also called
@@ -25,7 +25,7 @@ pub enum TransmittableBoundaryExtension {
     Periodic = 3,
 }
 
-impl Default for TransmittableBoundaryExtension {
+impl Default for InplaceBoundaryExtension {
     /// We chose the same default here as the `scipy` function
     /// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
     /// This doesn't mean that this is the best continuation, your mileage may vary.
@@ -34,7 +34,7 @@ impl Default for TransmittableBoundaryExtension {
     }
 }
 
-impl TransmittableBoundaryExtension {
+impl InplaceBoundaryExtension {
     #[inline]
     pub(crate) fn extended_index(self, idx: isize, n: usize) -> usize {
         debug_assert!(n > 0, "logic error: index extension for zero length row");

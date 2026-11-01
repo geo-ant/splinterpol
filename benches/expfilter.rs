@@ -9,7 +9,7 @@ use rand::{
 };
 use spleen::{
     bench_exports::apply_exponential_filter_in_place, bench_exports::compute_truncation_indices,
-    inplace::TransmittableBoundaryExtension,
+    inplace::InplaceBoundaryExtension,
 };
 
 fn make_random_data<F: Float + FromPrimitive + SampleUniform>(
@@ -49,9 +49,9 @@ fn bench_exponential_filter(c: &mut Criterion) {
 
     for size in sizes {
         for ext in [
-            TransmittableBoundaryExtension::Reflected,
-            TransmittableBoundaryExtension::WholeSymmetric,
-            TransmittableBoundaryExtension::Periodic,
+            InplaceBoundaryExtension::Reflected,
+            InplaceBoundaryExtension::WholeSymmetric,
+            InplaceBoundaryExtension::Periodic,
         ] {
             group
                 .bench_with_input(
@@ -66,7 +66,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
                                     std::hint::black_box(pole),
                                     data.as_mut_slice(),
                                     trunc_idx,
-                                    TransmittableBoundaryExtension::Periodic,
+                                    InplaceBoundaryExtension::Periodic,
                                 )
                                 .unwrap();
                                 std::hint::black_box(data)
@@ -90,7 +90,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
                                     std::hint::black_box(pole),
                                     data.as_mut_slice(),
                                     len / 5,
-                                    TransmittableBoundaryExtension::Periodic,
+                                    InplaceBoundaryExtension::Periodic,
                                 )
                                 .unwrap();
                                 std::hint::black_box(data)

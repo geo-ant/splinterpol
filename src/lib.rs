@@ -107,7 +107,7 @@ pub fn blocked_expf64_strided_iter(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: inplace::TransmittableBoundaryExtension,
+    boundary_extension: inplace::InplaceBoundaryExtension,
 ) -> Result<(), Error> {
     let col = iter_utils::BlockedStridedSliceMut::<8, f64>::new(
         signal,
@@ -145,7 +145,7 @@ pub fn expf64_strided_iter(
     // not the number of elements to be truncated. The element at index N is
     // counted for the initialization.
     truncation_idx: usize,
-    boundary_extension: inplace::TransmittableBoundaryExtension,
+    boundary_extension: inplace::InplaceBoundaryExtension,
 ) -> Result<(), Error> {
     let col = iter_utils::StridedSliceMut::new(
         signal,
