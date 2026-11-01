@@ -9,7 +9,9 @@ mod test;
 
 #[inline]
 /// Interpolate a single point at floating point indices for `row` and `col`
-/// of the image. **Note** that this function indexes the rows and columns of the
+/// of the image.
+///
+/// **Attention**: this function indexes the rows and columns of the
 /// image where `(row, col) = (y,x)` in the typical `x`, `y` coordinate system.
 ///
 /// The function accepts the 2D B-Spline coefficients `coeffs2d` in row-major

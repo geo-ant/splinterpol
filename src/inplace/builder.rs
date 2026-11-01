@@ -8,6 +8,50 @@ use core::iter::Sum;
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
 
 #[derive(Copy, Clone, PartialEq, Eq)]
+/// Higher-level interface to spline-interpolation of 2D images. Construct
+/// an instance of this by using the builder pattern in the example below.
+/// The interpolator takes ownership of the image data and the builder
+/// pattern guides you through the 2-step process of coefficient calculation
+/// and interpolation.
+///
+/// ## Example
+///
+/// ```rust
+/// # fn foo() {
+/// # use spleen::*;
+/// use spleen::bspline::*;
+/// use spleen::inplace::SplineInterpolator2d;
+/// use spleen::inplace::TransmittableBoundaryExtension::*;
+/// # let mut data = [10.;90];
+/// # let epsilon = 1e-1;
+/// # let width = core::num::NonZero::new(9).unwrap();
+/// # let height = core::num::NonZero::new(10).unwrap();
+/// # let extension = spleen::inplace::TransmittableBoundaryExtension::Periodic;
+/// # let image_data = RowMajor {data, width, height};
+///
+/// let interp = SplineInterpolator2d::new(BSpline3::new())
+///                // this is optional and defaults
+///                // to whole-symmetric extension
+///                .extension(WholeSymmetric)
+///                // giving the block sizes for
+///                // computation is optional and
+///                // defaults to `1`. Block sizes
+///                // are in number of elements, not
+///                // bytes.
+///                .row_blocksize::<8>()
+///                .col_blocksize::<1>()
+///                // this is mandatory and finalizes
+///                // the computation of the interpolator
+///                // after which it can be used for
+///                // interpolation.
+///                .compute(image_data, epsilon)
+///                .unwrap();
+///
+/// // now use the interpolator to find the values at
+/// // arbitraty points inside the original index grid
+/// let value = interp.interp_single(1.5, 2.4);
+/// # }
+/// ```
 pub struct SplineInterpolator2d<B, C> {
     bspline: B,
     // NOTE(geo) this guy uses owned containers because forcing a slice here
@@ -27,6 +71,8 @@ pub struct SplineInterpolator2d<B, C> {
     boundary_extension: TransmittableBoundaryExtension,
 }
 
+/// This is just an intermediate structure on the way to configuring and
+/// building a spline interpolator.
 pub struct SplineInterpBuilder2d<B, C, const RB: usize, const CB: usize> {
     bspline: B,
     coeffs: C,
@@ -35,6 +81,8 @@ pub struct SplineInterpBuilder2d<B, C, const RB: usize, const CB: usize> {
 
 impl SplineInterpolator2d<(), ()> {
     #[inline]
+    /// Starts the builder process for a spline interpolator, which
+    /// is finalized with the call to [`compute`](SplineInterpBuilder2d::compute)
     pub fn new<B: BSpline>(bspline: B) -> SplineInterpBuilder2d<B, (), 1, 1> {
         SplineInterpBuilder2d {
             bspline,
@@ -46,6 +94,8 @@ impl SplineInterpolator2d<(), ()> {
 
 impl<B, C, const CB: usize> SplineInterpBuilder2d<B, C, 1, CB> {
     #[inline]
+    /// Set the block size for column calculations at compile time, see
+    /// the comments on [`crate::inplace::coefficients2d_blocked`].
     pub fn col_blocksize<const RB: usize>(self) -> SplineInterpBuilder2d<B, C, RB, CB> {
         let SplineInterpBuilder2d {
             bspline,
@@ -62,6 +112,8 @@ impl<B, C, const CB: usize> SplineInterpBuilder2d<B, C, 1, CB> {
 
 impl<B, C, const RB: usize> SplineInterpBuilder2d<B, C, RB, 1> {
     #[inline]
+    /// Set the block size for row calculations at compile time, see
+    /// the comments on [`crate::inplace::coefficients2d_blocked`].
     pub fn row_blocksize<const CB: usize>(self) -> SplineInterpBuilder2d<B, C, RB, CB> {
         let SplineInterpBuilder2d {
             bspline,
@@ -139,6 +191,11 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder2d<B, (), RB, CB> {
 }
 
 impl<B, C> SplineInterpolator2d<B, C> {
+    /// Interpolate the value of a single point at the given floating point
+    /// indices for the `row` and `column` of the image.
+    ///
+    /// **Attention**: this function indexes `(row, col)`, which
+    /// is `(y,x)` in the common `x,y` coordinate system.
     pub fn interp_single<const NWEIGHTS: usize>(
         &self,
         row: B::Float,

@@ -72,7 +72,9 @@ where
 /// `ROW_BLOCKSIZE` and `COL_BLOCKSIZE` which allow us to specify a blocksize
 /// for operations on the rows and columns. Those blocksizes can enable SIMD
 /// accelaration for calculations, which _can_ make the calculations faster,
-/// but the only way to find out on _your system_ is to measure.
+/// but the only way to find out on _your system_ is to measure. Block sizes
+/// are in _numbers of elements_, not bytes, i.e. a block size of `8`
+/// for `f64` data means 64 bytes.
 ///
 /// ## Recommendations
 ///
