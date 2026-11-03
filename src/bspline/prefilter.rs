@@ -17,9 +17,9 @@ mod poles;
 // fuck I hate everything about this NPOLES trait bound but generic parameters
 // may not be used in constant expressions yet and this is so fucking stupid
 // I am losing my shit.
-/// Every B-Spline in this crate implements this trait. It describes the
-/// poles and the normalization used for a B-Spline in the coefficient calculation
-/// (i.e. prefiltering) step.
+/// **Internal Trait**. Every B-Spline in this crate implements this trait.
+/// It describes the poles and the normalization used for a B-Spline in the
+/// coefficient calculation (i.e. prefiltering) step.
 pub trait BSplinePrefilter<const NPOLES: usize>: BSpline {
     // we can't fucking do this because
     // "generic parameters may not be used in const expressions"
@@ -32,10 +32,10 @@ pub trait BSplinePrefilter<const NPOLES: usize>: BSpline {
     // Also I hate that I can't make this an associated constant, but
     // the Float trait cannot work with this as trait methods in general
     // cannot be const.
-    /// The poles of the BSpline. The number of for a BSpline of degree
+    /// **Internal**. The poles of the BSpline. The number of for a BSpline of degree
     /// `n` is `floor(n/2)`, see [B&M 2018](https://www.ipol.im/pub/art/2018/221/).
     fn poles(&self) -> &[Self::Float; NPOLES];
-    /// normalization constant from eq. (75) in the [B&M 2018](https://www.ipol.im/pub/art/2018/221/)
+    /// **Internal**. Normalization constant from eq. (75) in the [B&M 2018](https://www.ipol.im/pub/art/2018/221/)
     /// paper, which is `1` for odd degree `n` and `2^n` otherwise.
     fn normalization() -> Self::Float;
 }
