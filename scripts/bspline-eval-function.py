@@ -219,7 +219,7 @@ def gen_rust_weight_impl(weights: list[sp.Expr]) -> str:
     upper = printer.doprint(radius)
 
     lines = [
-        "#[inline]",
+        "#[inline(always)]",
         f"pub fn weights(t: f64) -> [f64; {nw}] {{",
         f"    debug_assert!(t >= {lower} && t <= {upper});",
     ]
