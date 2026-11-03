@@ -206,8 +206,36 @@ class PolynomialRustPrinter(RustCodePrinter):
 
         return f"{sign}{digits[:-places]}.{digits[-places:]}"
 
+# llm assistance due to crappy python skills
+def gen_rust_weight_impl(weights: list[sp.Expr]) -> str:
+    printer = PolynomialRustPrinter()
+    nw = len(weights)
+
+    # One CSE pass over the entire array, so different weights can share terms.
+    temporaries, outputs = sp.cse(weights, symbols=sp.numbered_symbols("tmp"))
+
+    radius = sp.Rational(nw, 2)
+    lower = printer.doprint(radius - 1)
+    upper = printer.doprint(radius)
+
+    lines = [
+        "#[inline]",
+        f"pub fn weights(t: f64) -> [f64; {nw}] {{",
+        f"    debug_assert!(t >= {lower} && t <= {upper});",
+    ]
+
+    for name, expr in temporaries:
+        lines.append(f"    let {name}: f64 = {printer.doprint(expr)};")
+
+    lines.append("    [")
+    for j, expr in enumerate(outputs):
+        lines.append(f"        {printer.doprint(expr)}, // w[{j}]")
+    lines.extend(["    ]", "}"])
+
+    return "\n".join(lines)
+
 # also lots of llm assistance because my python is too crappy here
-def gen_rust_impl(poly_pieces: list[PolyPiece]) -> str:
+def gen_rust_eval_impl(poly_pieces: list[PolyPiece]) -> str:
     printer = PolynomialRustPrinter()
     y = sp.Symbol("y")
 
@@ -258,4 +286,9 @@ if len(sys.argv) != 2:
     sys.exit(f"Usage: python {sys.argv[0]} <spline degree>")
 
 n = int(sys.argv[1])
-print(gen_rust_impl(compute_piecewise_betan(n)))
+poly_pieces = compute_piecewise_betan(n);
+# for reference how the eval function would look. We're now using the
+# weight function directly which just returns [eval(t),eval(t-1),...,eval(t-(NWEIGHTS-1))]
+# directly.
+# print(gen_rust_eval_impl(poly_pieces))
+print(gen_rust_weight_impl(compute_weight_array(poly_pieces,n)))
