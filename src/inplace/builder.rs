@@ -17,7 +17,7 @@ mod test;
 /// pattern guides you through the 2-step process of coefficient calculation
 /// and interpolation.
 ///
-/// ## Example
+/// ## Example: General Purpose Interpolation
 ///
 /// ```rust
 /// # fn foo() {

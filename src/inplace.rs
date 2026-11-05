@@ -3,6 +3,15 @@
 //! recommended to use the high-level interface unless you can't for some reason.
 //! Both ways of interacting with this library are completely **allocation-free**.
 //!
+//! ## High-level Interface
+//!
+//! The [`SplineInterpolator2d`](crate::inplace::SplineInterpolator2d) is a
+//! zero-overhead, high level interface to the 2D interpolation functionality of
+//! this library. It's the recommended way of interacting with this library
+//! and offers the same configuration options as the low-level interface.
+//! The low-level interface is exposed for users who want direct exposure to
+//! the 2-step process that this library uses for interpolation.
+//!
 //! ## Low-level Interface
 //!
 //! Spline interpolation is a two-step process, where the first step is to calculate
@@ -32,8 +41,10 @@
 //! # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 //!
 //! inplace::Coefficients2d::new(BSpline3::<f64>::new())
-//!     .with_row_blocksize::<2>()
-//!     .with_column_blocksize::<3>()
+//!     // optional, uses block-size 1 if not given
+//!     .with_row_blocksize::<4>()
+//!     // optional, uses block-size 1 if not given
+//!     .with_column_blocksize::<8>()
 //!     .compute(
 //!         RowMajor {
 //!           data: &mut my_image_data,
@@ -51,8 +62,12 @@
 //!
 //! ### Step 2: Interpolation
 //!
-//! TODO!!
+//! Now that we have the coefficients, we can use them for interpolation in this
+//! low-level interface. The general purpose entry point for interpolating
+//! a point on the grid!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //!
+//! TODO TODO
+//! TODO:documentation
 //!
 //!
 //!

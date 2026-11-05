@@ -39,8 +39,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// To get a unique solution to the interpolation problem, this implementation
 /// requires us to specify a continuation of the given function beyond the measured
 /// grid, such as mirrored or periodic extention. This is what `boundary_extension`
-/// is for. Though this library doesn't deal in extrapolation, this implicitly defines
-/// an extrapolation beyond the boundaries.
+/// is for.
 ///
 /// The parameter `epsilon` controls how faithfully the library reproduces
 /// the given function values _on the sampled grid points_. The interpolation
@@ -468,41 +467,6 @@ where
     //     idx -= 1;
     // }
 
-    // // TODO TAIL HANDLING
-    // // --- manually algebraically unrolled ---
-    // const STEP: usize = 2;
-    // let mut idx;
-    // if end_idx > STEP {
-    //     idx = end_idx - STEP;
-    //     let mut last = signal[end_idx];
-    //     loop {
-    //         let x0 = signal[idx];
-    //         let x1 = signal[idx + 1];
-    //         let y1 = alpha * (last - x1);
-    //         // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
-    //         // let y1 = last.fmuladd(alpha, neg_alpha * x1);
-    //         // let y0 = alpha * (y1 - x0);
-    //         let y0 = alpha_sq * last - alpha_sq * x1 - alpha * x0;
-    //         // let y0 = alpha_sq * (last - x1) - alpha * x0;
-    //         // let y0 = alpha * (alpha * (last - x1) - x0);
-    //         // NOTE PERF: fmuladd doesn't much help here... in my benchmarks
-    //         // let y0 = x0.fmuladd(neg_alpha, last.fmuladd(alpha_sq, neg_alpha_sq * x1));
-    //         signal[idx + 1] = y1;
-    //         signal[idx] = y0;
-    //         last = y0;
-    //         if idx < STEP {
-    //             break;
-    //         }
-    //         idx -= STEP;
-    //     }
-    // } else {
-    //     idx = end_idx - 1;
-    // }
-    // if idx != 0 {
-    //     signal[0] = alpha * (signal[1] - signal[0]);
-    // }
-
-    // TODO TAIL HANDLING
     // --- algebraically unrolled ---
 
     // idx is the first element of the block with `STEP` elements
@@ -539,20 +503,6 @@ where
             idx -= 1;
         }
     }
-
-    // // --- iterator based loop ---
-    // let last = signal[end_idx];
-    // signal
-    //     .iter_mut()
-    //     .rev()
-    //     .skip(1)
-    //     .scan(last, |last, cur| {
-    //         let new = alpha * (*last - *cur);
-    //         *cur = new;
-    //         *last = *cur;
-    //         Some(())
-    //     })
-    //     .for_each(drop);
 
     Ok(())
 }
@@ -665,28 +615,6 @@ where
     // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
     // NOTE PERF: here's some godbolt: https://godbolt.org/z/vrv5TGT18
 
-    // NOTE PERF: this loop might perform very very slighly faster
-    // than the iterator based implementation but not enough for me to abandon
-    // the iterators
-    // let mut last = signal[0];
-    // let mut idx = 1;
-    // let end_idx = signal.len() - 1;
-    // if end_idx >= signal.len() {
-    //     return Err(Error::OutOfBounds);
-    // }
-
-    // loop {
-    //     if idx > end_idx {
-    //         break;
-    //     }
-    //     // let cur = signal.as_slice()[idx];
-    //     let cur = signal[idx];
-    //     let new = last.fmuladd(alpha, cur);
-    //     signal[idx] = new;
-    //     last = new;
-    //     idx += 1;
-    // }
-
     // this is the same loop as above rewritten with iterators, which
     // makes things not necessarily clearer
     let last = signal.strided_first().ok_or(Error::NotEnoughData)?;
@@ -724,23 +652,6 @@ where
     };
 
     signal.strided_write_last(s_lend);
-
-    // NOTE PERF: this is the original loop that I replaced with iterators below.
-    // It performs maybe very very slighly better than the iterator based loop,
-    // but not enough for me to abandon the iterator loop.
-    // let mut idx = end_idx - 1;
-    // let mut last = signal[end_idx];
-
-    // loop {
-    //     let cur = signal[idx];
-    //     let new = alpha * (last - cur);
-    //     signal[idx] = new;
-    //     last = new;
-    //     if idx == 0 {
-    //         break;
-    //     }
-    //     idx -= 1;
-    // }
 
     let last = signal.strided_last().ok_or(Error::NoData)?;
     signal
@@ -869,28 +780,6 @@ where
     // eq. (39) in the Briand and Monasse paper, cf also algo 3, line 3.
     // NOTE PERF: here's some godbolt: https://godbolt.org/z/vrv5TGT18
 
-    // NOTE PERF: this loop might perform very very slighly faster
-    // than the iterator based implementation but not enough for me to abandon
-    // the iterators
-    // let mut last = signal[0];
-    // let mut idx = 1;
-    // let end_idx = signal.len() - 1;
-    // if end_idx >= signal.len() {
-    //     return Err(Error::OutOfBounds);
-    // }
-
-    // loop {
-    //     if idx > end_idx {
-    //         break;
-    //     }
-    //     // let cur = signal.as_slice()[idx];
-    //     let cur = signal[idx];
-    //     let new = last.fmuladd(alpha, cur);
-    //     signal[idx] = new;
-    //     last = new;
-    //     idx += 1;
-    // }
-
     // this is the same loop as above rewritten with iterators, which
     // makes things not necessarily clearer
     let last = signal.strided_first().ok_or(Error::NotEnoughData)?;
@@ -933,23 +822,6 @@ where
     };
 
     signal.strided_write_last(s_lend);
-
-    // NOTE PERF: this is the original loop that I replaced with iterators below.
-    // It performs maybe very very slighly better than the iterator based loop,
-    // but not enough for me to abandon the iterator loop.
-    // let mut idx = end_idx - 1;
-    // let mut last = signal[end_idx];
-
-    // loop {
-    //     let cur = signal[idx];
-    //     let new = alpha * (last - cur);
-    //     signal[idx] = new;
-    //     last = new;
-    //     if idx == 0 {
-    //         break;
-    //     }
-    //     idx -= 1;
-    // }
 
     let last = signal.strided_last().ok_or(Error::NoData)?;
     signal

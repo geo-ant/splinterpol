@@ -55,10 +55,6 @@ fn extension_produces_the_only_array_index_for_n1() {
     }
 }
 
-#[test]
-// just to make sure I don't have the same bug as the reference code
-fn extensions_dont_stall_for_n1() {}
-
 // semantic 1:1 translations from the reference implementation
 mod reference {
     // WARN: this implementation has a bug for n==1 where it loops indefinitely
