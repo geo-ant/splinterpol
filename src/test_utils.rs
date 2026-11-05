@@ -1,5 +1,8 @@
 use std::path::Path;
 
+/// just a struct to give compile time constants as arguments
+pub struct Const<const N: usize>;
+
 /// utility macro for parametrizing a test with different instantiations
 /// of a single const-generic parameter.
 #[macro_export]

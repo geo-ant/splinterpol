@@ -11,6 +11,8 @@ use num_traits::{AsPrimitive, Float, FromPrimitive, float::TotalOrder};
 use test_case::test_case;
 
 mod synthetic_image;
+// just a lot of lines in the test so this lives in its own module
+mod interp1d;
 
 // little hack macro to make the spline test function "generic" over the Bspline
 // without actually pulling in another generic test dependency for now, because
@@ -160,7 +162,7 @@ gen_bspline_test! {
 #[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,InplaceBoundaryExtension::Periodic, 1e-13)]
 #[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,InplaceBoundaryExtension::Reflected, 1e-13)]
 #[test_case("test-assets/imagej/mri_186x226.f32.raw",186,226,true,InplaceBoundaryExtension::WholeSymmetric, 1e-13)]
-fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize, const NW: usize>(
+fn input_is_reproduced_within_relative_error_on_original_grid2d<B, const NP: usize, const NW: usize>(
     image_path: &str,
     width: usize,
     height: usize,
@@ -193,7 +195,7 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
         width: width.try_into().unwrap() ,
         height:height.try_into().unwrap(),
     };
-    let interpolator = SplineInterpolator2d::new(B::default()).extension(ext).compute(data,  epsilon).unwrap();
+    let interpolator = SplineInterpolator2d::builder(B::default()).extension(ext).build(data,  epsilon).unwrap();
 
     let mut abs_sum = 0.;
 
@@ -226,7 +228,7 @@ fn input_is_reproduced_within_relative_error_on_original_grid<B, const NP: usize
 }
 }
 
-fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
+fn interpolation_for_synthetic_image2d<T, B, const NP: usize, const NW: usize>(
     bspline: B,
     width: usize,
     height: usize,
@@ -260,9 +262,9 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
     assert!(fmax.is_finite());
     let data = image.clone();
     let original = image;
-    let interpolator = SplineInterpolator2d::new(bspline)
+    let interpolator = SplineInterpolator2d::builder(bspline)
         .extension(ext)
-        .compute(data, epsilon)
+        .build(data, epsilon)
         .unwrap();
 
     let mut abs_sum = T::ZERO;
@@ -339,7 +341,7 @@ fn interpolation_for_synthetic_image<T, B, const NP: usize, const NW: usize>(
 #[test]
 #[track_caller]
 fn test_foo() {
-    interpolation_for_synthetic_image(
+    interpolation_for_synthetic_image2d(
         BSpline6::<f64>::new(),
         256,
         256,

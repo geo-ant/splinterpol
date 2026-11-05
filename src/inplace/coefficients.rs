@@ -8,6 +8,7 @@ use crate::{
     numerics::{FloatVector, FusedMuladd},
 };
 use core::iter::Sum;
+use core::num::NonZeroUsize;
 use num_traits::{ConstOne, ConstZero, Float};
 
 /// Calculate the spline coefficients for the given `bspline` _in place_. This
@@ -25,6 +26,9 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// Note also that a more high level interface to the workflow of calculating
 /// the coefficients and then using them for interpolation exists with
 /// [`crate::inplace::SplineInterpolator2d`].
+///
+/// On error, the contents in the `image_data` should be considered valid
+/// if and only if the function returns without error.
 ///
 /// ## Arguments
 ///
@@ -102,18 +106,83 @@ where
     B::Float: Float + ConstOne + ConstZero + Sum,
     B: BSplinePrefilter<NPOLES>,
 {
-    const { assert!(COL_BLOCKSIZE >= 1) };
-    let expected_len = match image_data
-        .width
-        .get()
-        .overflowing_mul(image_data.height.get())
-    {
-        (val, false) => val,
-        (_, true) => return Err(Error::Overflow),
-    };
+    coefficients1d_2d_blocked_impl::<B, NPOLES, ROW_BLOCKSIZE, COL_BLOCKSIZE, 2>(
+        bspline,
+        image_data,
+        epsilon,
+        boundary_extension,
+    )
+}
 
-    if image_data.data.len() != expected_len {
-        return Err(Error::Dimensions);
+/// Same as [`coefficients2d_blocked`] but for 1D data. The given `data` is
+/// assumed as 1D data and overwritten with the coefficients if the function
+/// returns successfully.
+pub fn coefficients1d_blocked<B, const NPOLES: usize, const ROW_BLOCKSIZE: usize>(
+    bspline: B,
+    data: &mut [B::Float],
+    epsilon: B::Float,
+    boundary_extension: InplaceBoundaryExtension,
+) -> Result<(), Error>
+where
+    B::Float: Float + ConstOne + ConstZero + Sum,
+    B: BSplinePrefilter<NPOLES>,
+{
+    let width = NonZeroUsize::new(data.len()).ok_or(Error::NoData)?;
+    coefficients1d_2d_blocked_impl::<B, NPOLES, ROW_BLOCKSIZE, 1, 1>(
+        bspline,
+        RowMajor {
+            data,
+            width,
+            height: const { NonZeroUsize::new(1).unwrap() },
+        },
+        epsilon,
+        boundary_extension,
+    )
+}
+
+// see above for the docs and meaning. This is a little hacky but it allows
+// me to unify the implementation of 1D and 2D coefficient calculation in a common
+// function by abusing compile time constants to basically make the compiler optimize out
+// `if false` code
+#[inline(always)]
+fn coefficients1d_2d_blocked_impl<
+    B,
+    const NPOLES: usize,
+    const ROW_BLOCKSIZE: usize,
+    const COL_BLOCKSIZE: usize,
+    // the dimensionality: this is only ever allowed to be 1 (for 1D) and 2 (for 2D)
+    // and we make some hacks inside, just to unify the implementations but it's
+    // not pretty.
+    const DIM: i32,
+>(
+    bspline: B,
+    // for 1D we'll just abuse the row major structure with height == 1
+    image_data: RowMajor<&mut [B::Float]>,
+    epsilon: B::Float,
+    boundary_extension: InplaceBoundaryExtension,
+) -> Result<(), Error>
+where
+    B::Float: Float + ConstOne + ConstZero + Sum,
+    B: BSplinePrefilter<NPOLES>,
+{
+    const {
+        assert!(DIM == 1 || DIM == 2);
+        assert!(ROW_BLOCKSIZE > 0);
+        assert!(((DIM == 1) && (COL_BLOCKSIZE == 1)) || ((DIM == 2) && COL_BLOCKSIZE > 0));
+    };
+    if DIM == 2 {
+        let expected_len = match image_data
+            .width
+            .get()
+            .overflowing_mul(image_data.height.get())
+        {
+            (val, false) => val,
+            (_, true) => return Err(Error::Overflow),
+        };
+
+        if image_data.data.len() != expected_len {
+            return Err(Error::Dimensions);
+        }
     }
 
     let width = image_data.width;
@@ -125,79 +194,73 @@ where
 
     let truncation_indices = compute_truncation_indices(bspline.poles(), epsilon)?;
 
-    // column filtering
-    // TODO: remove this horrible unsafe code. We should not have to do any of this
-    // for 2D sequential row-by row iteration. We can write an abstraction that
-    // safely returns column iterators for a row major mutable view of an array...
-    // but for parallel iterators we have to use unsafe code. But maybe I
-    // don't have to do any iterator stuff and I can use a blocking strategy
-    // with manual indexing right away anyways, so let's see if we can get this
-    // working and see how well it performs compared to the reference C impl
+    // column filtering (only for 2D case)
+    if DIM == 2 {
+        for (pole, truncation_index) in bspline
+            .poles()
+            .iter()
+            .copied()
+            .zip(truncation_indices.iter().copied())
+        {
+            // process the columns in chunks of BLOCKSIZE
+            // this if is probably not necessary, but since I'm doing all the
+            // premature optimization I can think of, I might just as well
+            // give the compiler the chance to remove that code at compile
+            let remaining_start_idx = if COL_BLOCKSIZE > 1 {
+                let mut idx = 0;
+                for col in (0..width.get()).step_by(COL_BLOCKSIZE) {
+                    let Some(col) = BlockedStridedSliceMut::<COL_BLOCKSIZE, B::Float>::new(
+                        image_data.data,
+                        crate::iter_utils::StridedAccessArgs {
+                            offset: col,
+                            stride: width,
+                            count: height,
+                        },
+                    ) else {
+                        break;
+                    };
+                    // .ok_or(Error::Dimensions)?;
+                    apply_exponential_filter_in_place_1d_iter_vector(
+                        pole,
+                        col,
+                        truncation_index,
+                        boundary_extension,
+                    )?;
+                    idx += COL_BLOCKSIZE;
+                }
+                idx
+            } else {
+                0
+            };
 
-    for (pole, truncation_index) in bspline
-        .poles()
-        .iter()
-        .copied()
-        .zip(truncation_indices.iter().copied())
-    {
-        // process the columns in chunks of BLOCKSIZE
-        // this if is probably not necessary, but since I'm doing all the
-        // premature optimization I can think of, I might just as well
-        // give the compiler the chance to remove that code at compile
-        let remaining_start_idx = if COL_BLOCKSIZE > 1 {
-            let mut idx = 0;
-            for col in (0..width.get()).step_by(COL_BLOCKSIZE) {
-                let Some(col) = BlockedStridedSliceMut::<COL_BLOCKSIZE, B::Float>::new(
+            // Now process the rest of the columns one by one.
+            // This might be optimized by trying to find the largest blocksize
+            // by trial and error (at compile time by using unrolled ifs) that
+            // can help here, but that's an optimization I wont do because it's
+            // crazy... and probably current const generics aren't super helpful
+            // here... but maybe I could use crunchy and unroll the loop by
+            // halving the index not sure...
+            for col in remaining_start_idx..width.get() {
+                let col = StridedSliceMut::new(
                     image_data.data,
                     crate::iter_utils::StridedAccessArgs {
                         offset: col,
                         stride: width,
                         count: height,
                     },
-                ) else {
-                    break;
-                };
-                // .ok_or(Error::Dimensions)?;
-                apply_exponential_filter_in_place_1d_iter_vector(
+                )
+                .ok_or(Error::Dimensions)?;
+                apply_exponential_filter_in_place_1d_iter(
                     pole,
                     col,
                     truncation_index,
                     boundary_extension,
                 )?;
-                idx += COL_BLOCKSIZE;
             }
-            idx
-        } else {
-            0
-        };
-
-        // Now process the rest of the columns one by one.
-        // This might be optimized by trying to find the largest blocksize
-        // by trial and error (at compile time by using unrolled ifs) that
-        // can help here, but that's an optimization I wont do because it's
-        // crazy... and probably current const generics aren't super helpful
-        // here... but maybe I could use crunchy and unroll the loop by
-        // halving the index not sure...
-        for col in remaining_start_idx..width.get() {
-            let col = StridedSliceMut::new(
-                image_data.data,
-                crate::iter_utils::StridedAccessArgs {
-                    offset: col,
-                    stride: width,
-                    count: height,
-                },
-            )
-            .ok_or(Error::Dimensions)?;
-            apply_exponential_filter_in_place_1d_iter(
-                pole,
-                col,
-                truncation_index,
-                boundary_extension,
-            )?;
         }
-    }
+    } // end column filtering
 
-    // row filtering
+    // row filtering (1D or 2D case)
     for (pole, truncation_index) in bspline
         .poles()
         .iter()
@@ -220,7 +283,7 @@ where
     }
 
     if B::normalization() != B::Float::ONE {
-        let normalization = B::normalization().powi(2);
+        let normalization = B::normalization().powi(DIM);
         image_data
             .data
             .iter_mut()

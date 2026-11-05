@@ -5,9 +5,10 @@
 //!
 //! ## High-level Interface
 //!
-//! The [`SplineInterpolator2d`](crate::inplace::SplineInterpolator2d) is a
-//! zero-overhead, high level interface to the 2D interpolation functionality of
-//! this library. It's the recommended way of interacting with this library
+//! The [`SplineInterpolator1d`](crate::inplace::SplineInterpolator1d) and
+//! [`SplineInterpolator2d`](crate::inplace::SplineInterpolator2d) are a
+//! zero-overhead, high level interface to the 1D and 2D interpolation functionality
+//! of this library. It's the recommended way of interacting with this library
 //! and offers the same configuration options as the low-level interface.
 //! The low-level interface is exposed for users who want direct exposure to
 //! the 2-step process that this library uses for interpolation.
@@ -29,6 +30,9 @@
 //! function is quite clunky to use, so prefer to use the builder style
 //! [`Coefficients2d`] wrapper for better ergonomics. Again, the parameters
 //! are documented in [`coefficients2d_blocked`], so please consult its docs.
+//!
+//! For 1D data, the process is analogous, we just use [`coefficients1d_blocked`]
+//! or [`Coefficients1d`] for calculating the coefficients.
 //!
 //! ```rust
 //! # fn foo() {
@@ -95,6 +99,8 @@ mod boundary;
 
 pub use boundary::InplaceBoundaryExtension;
 pub use builder::Coefficients2d;
+pub use builder::SplineInterpolator1d;
 pub use builder::SplineInterpolator2d;
+pub use coefficients::coefficients1d_blocked;
 pub use coefficients::coefficients2d_blocked;
 pub use interpolation::interp2d_single;

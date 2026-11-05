@@ -74,10 +74,10 @@ where
 }
 
 #[inline]
-pub fn interp1d_single<const NW: usize, B>(
+pub fn interp1d_single<B, const NW: usize>(
     coeffs: &[B::Float],
-    pos: B::Float,
     boundary_extension: InplaceBoundaryExtension,
+    pos: B::Float,
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
