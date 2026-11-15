@@ -122,12 +122,13 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();
 /// # use splinterpol::inplace::InplaceBoundaryExtension;
-/// # let data = some_data.as_mut();
+///
 /// let mut image_inout = RowMajor {
-///     data,
+///     data: some_data.as_mut(),
 ///     width,
 ///     height,
 /// };
+///
 /// inplace::coefficients2d(
 ///     &BSpline3::<f64>::new(),
 ///     image_inout,
@@ -140,13 +141,10 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// )
 /// .unwrap();
 ///
-/// # // to make sure the comment above is correct
-/// # assert_eq!(InplaceBoundaryExtension::default(), InplaceBoundaryExtension::WholeSymmetric);
-///
 /// # }
 /// ```
 ///
-/// On success, the coefficients are now in the underlying data pointed to by
+/// On success, the coefficients are now in the underlying `some_data` pointed to by
 /// `image_inout` and can be used for 2D interpolation.
 /// They are valid only for interpolation with the same spline order and boundary
 /// extension with which they were computed.

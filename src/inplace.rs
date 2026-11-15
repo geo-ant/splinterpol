@@ -40,9 +40,8 @@
 //! # let width = core::num::NonZero::new(9).unwrap();
 //! # let height = core::num::NonZero::new(10).unwrap();
 //! # use splinterpol::inplace::InplaceBoundaryExtension;
-//! # let data = some_data.as_mut();
 //! let mut image_inout = RowMajor {
-//!     data,
+//!     data: some_data.as_mut(),
 //!     width,
 //!     height,
 //! };
@@ -59,25 +58,61 @@
 //! )
 //! .unwrap();
 //!
-//! # // to make sure the comment above is correct
-//! # assert_eq!(InplaceBoundaryExtension::default(), InplaceBoundaryExtension::WholeSymmetric);
-//!
 //! # }
 //! ```
 //!
-//! At this point, `image_inout` is overwritten with the spline coefficients
-//! and can be used for interpolation.
+//! At this point, the image data in `some_data` is overwritten with the
+//! spline coefficients and can be used for interpolation.
 //!
 //! ### Step 2: Interpolation
 //!
-//! Now that we have the coefficients, we can use them for interpolation in this
-//! low-level interface. The general purpose entry point for interpolating
-//! a point on the grid!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+//! Now that we have the coefficients, we can use them for interpolation using
+//! the second half of the low-level interface. The general purpose entry point
+//! for interpolating an arbitraty floating point coordinate on the grid are
+//! [`interp1d_single`](crate::inplace::interpolation::interp1d_single) and
+//! [`interp2d_single`](crate::inplace::interpolation::interp2d_single). The
+//! following code shows how to use the previously calculated coefficients
+//! for interpolation.
 //!
-//! TODO TODO
-//! TODO:documentation
+//! **Attention**: the same B-Spline type `B` and boundary
+//! extension that was used to create the coefficients must be used for
+//! interpolation or the results will be incorrect. Using the aforementioned
+//! high-level interface takes care of this automatically.
 //!
+//! ```rust
+//! # use crate::inplace::interpolation::interp2d_single;
+//! # use core::num::NonZeroUsize;
+//! # use splinterpol::*;
+//! # use splinterpol::bspline::*;
+//! # use splinterpol::shared::*;
+//! # let mut some_data = [10.;90];
+//! # let epsilon = 1e-1;
+//! # let width = core::num::NonZero::new(9).unwrap();
+//! # let height = core::num::NonZero::new(10).unwrap();
+//! # use splinterpol::inplace::InplaceBoundaryExtension;//!
+//! # fn foo(data:& [f64], width: NonZeroUsize, height: NonZeroUsize, boundary_ext: InplaceBoundaryExtension) {
+//! let mut coeffs = RowMajor {
+//!   data: some_data.as_ref(),
+//!   width,
+//!   height
+//! };
 //!
+//! //                          must be the same type as was used
+//! //                          for calculating the coefficients
+//! //                           |
+//! //                           |               always inferred
+//! //                           |               |
+//! //                           v               v
+//! let val = interp2d_single::<BSpline3::<f64>, _>::(
+//!   coeffs,
+//!   // must be the same that was used for the coefficients
+//!   boundary_ext,
+//! ).unwrap();
+//!
+//! foo!
+//!
+//! # }
+//! ```
 //!
 //! ## References
 //!

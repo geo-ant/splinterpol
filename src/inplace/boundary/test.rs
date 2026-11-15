@@ -1,6 +1,17 @@
 use crate::inplace::InplaceBoundaryExtension;
 
 #[test]
+fn default_boundary_extension_is_whole_symmetric() {
+    // We've documented that this is the default and it matches with scipy.
+    // If the default changes, this is a breaking change and the docs need
+    // to change.
+    assert_eq!(
+        InplaceBoundaryExtension::default(),
+        InplaceBoundaryExtension::WholeSymmetric
+    );
+}
+
+#[test]
 fn extensions_produce_reference_results_for_n_ge_2() {
     // we have to use n=2 as the start because the reference impl has a bug for
     // n = 1 in the whole sym extension

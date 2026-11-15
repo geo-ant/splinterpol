@@ -15,10 +15,8 @@ mod test;
 ///
 /// The function accepts the 2D B-Spline coefficients `coeffs2d` in row-major
 /// order, that should have been calculated with
-/// [`coefficients2d_blocked`](`crate::inplace::coefficients2d_blocked`), or
-/// equivalently using the builder interface
-/// [`Coefficients2d`](crate::inplace::Coefficients2d), with the same `bspline`
-/// and `boundary_extension` arguments.
+/// [`coefficients2d`](`crate::inplace::coefficients2d`) with a B-Spline of
+/// type `B`, precision `epsilon`, and boundary extension `boundary_ext`.
 ///
 /// ## Extrapolation
 ///
@@ -26,6 +24,11 @@ mod test;
 /// by `boundary_condition` is used to extrapolate the values beyond the grid.
 /// While this makes the library internally consistent, it should be obvious
 /// that this is _not useful_ for actual prediction. Don't use it for that!
+///
+/// ## Example
+///
+/// TODO!!!!!!!!!!!!!!
+///
 #[inline]
 pub fn interp2d_single<B, const NW: usize>(
     coeffs2d: RowMajor<&[B::Float]>,

@@ -35,8 +35,9 @@ pub enum InplaceBoundaryExtension {
 
 impl Default for InplaceBoundaryExtension {
     /// We chose the same default here as the `scipy` function
-    /// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
-    /// This doesn't mean that this is the best continuation, your mileage may vary.
+    /// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter),
+    /// where it is called `mirrored`. This doesn't imply that this is the best
+    /// continuation, your mileage may vary.
     fn default() -> Self {
         Self::WholeSymmetric
     }
