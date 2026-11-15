@@ -1,5 +1,7 @@
 use crate::Error;
 use crate::RowMajor;
+use crate::shared::ColBlockSize;
+use crate::shared::RowBlockSize;
 use crate::{
     bspline::BSplinePrefilter,
     inplace::InplaceBoundaryExtension,
@@ -56,14 +58,17 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// ### Blocking
 ///
 /// The function has two additional compile time (const generic) arguments
-/// `ROW_BLOCKSIZE` and `COL_BLOCKSIZE` which allow us to specify a blocksize
+/// `row_blocksize` and `col_blocksize` which allow us to specify a blocksize
 /// for operations on the rows and columns. Those blocksizes can enable SIMD
 /// accelaration for calculations, which _can_ make the calculations faster,
 /// but the only way to find out on _your system_ is to measure. Block sizes
 /// are in _numbers of elements_, not bytes, i.e. a block size of `8`
 /// for `f64` data means 64 bytes.
 ///
+///
 /// ## Recommendations
+///
+/// ### Epsilon
 ///
 /// While B&M don't give a general recommendation for chosing `epsilon`, I'll
 /// state a couple helpful things here, based on their results (B&M section 6.2,
@@ -86,12 +91,72 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// [`spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter)
 /// function.
 ///
+/// ### Blocking
+///
+/// Start with block sizes of `1` and `1` and measure performance. Usually,
+/// increasing the row blocksize to `4` or `8` elements can bring very visible
+/// performance benefits, while the column blocksize is much more system dependent.
+///
+/// ### Boundary Extension
+///
+/// If one of the boundary conditions makes sense naturally for the problem,
+/// chose that. In general it might make sense to test the influence of different
+/// boundary conditions on the interpolation result between grid points. There
+/// is no universally applicable default, but for reference
+/// [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
+/// uses the same default as [`InplaceBoundaryExtension`](crate::inplace::boundary::InplaceBoundaryExtension).
+///
+/// ## Example
+///
+/// The example below calculates the cubic (=order 3) B-spline coefficients
+/// for a given row-major image and overwrites the image data with the coefficients.
+/// uses block size of `8` for rows and `1` for columns.
+///
+/// ```rust
+/// # fn foo() {
+/// # use splinterpol::*;
+/// # use splinterpol::bspline::*;
+/// # use splinterpol::shared::*;
+/// # let mut some_data = [10.;90];
+/// # let epsilon = 1e-1;
+/// # let width = core::num::NonZero::new(9).unwrap();
+/// # let height = core::num::NonZero::new(10).unwrap();
+/// # use splinterpol::inplace::InplaceBoundaryExtension;
+/// # let data = some_data.as_mut();
+/// let mut image_inout = RowMajor {
+///     data,
+///     width,
+///     height,
+/// };
+/// inplace::coefficients2d(
+///     BSpline3::<f64>::new(),
+///     image_inout,
+///     epsilon,
+///     // default is whole-symmetric, same as scipy
+///     InplaceBoundaryExtension::default(),
+///     RowBlockSize::<8>,
+///     // default row and column block-sizes are 1
+///     ColBlockSize::default(),
+/// )
+/// .unwrap();
+///
+/// # // to make sure the comment above is correct
+/// # assert_eq!(InplaceBoundaryExtension::default(), InplaceBoundaryExtension::WholeSymmetric);
+///
+/// # }
+/// ```
+///
+/// On success, the coefficients are now in the underlying data pointed to by
+/// `image_inout` and can be used for 2D interpolation.
+/// They are valid only for interpolation with the same spline order and boundary
+/// extension with which they were computed.
+///
 /// ## References
 ///
 /// * [B&M](https://www.ipol.im/pub/art/2018/221/) t. briand, p. monasse: "Theory
 ///   and Practice of Image B-spline Interpolation"
 /// * [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
-pub fn coefficients2d_blocked<
+pub fn coefficients2d<
     B,
     const NPOLES: usize,
     const ROW_BLOCKSIZE: usize,
@@ -101,11 +166,15 @@ pub fn coefficients2d_blocked<
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
     boundary_extension: InplaceBoundaryExtension,
+    row_blocksize: RowBlockSize<ROW_BLOCKSIZE>,
+    col_blocksize: ColBlockSize<COL_BLOCKSIZE>,
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum,
     B: BSplinePrefilter<NPOLES>,
 {
+    _ = row_blocksize;
+    _ = col_blocksize;
     coefficients1d_2d_blocked_impl::<B, NPOLES, ROW_BLOCKSIZE, COL_BLOCKSIZE, 2>(
         bspline,
         image_data,
@@ -116,17 +185,20 @@ where
 
 /// Same as [`coefficients2d_blocked`] but for 1D data. The given `data` is
 /// assumed as 1D data and overwritten with the coefficients if the function
-/// returns successfully.
+/// returns successfully. Naturally, since the data is one-dimensional, there
+/// is only one configurable blocksize.
 pub fn coefficients1d_blocked<B, const NPOLES: usize, const ROW_BLOCKSIZE: usize>(
     bspline: B,
     data: &mut [B::Float],
     epsilon: B::Float,
     boundary_extension: InplaceBoundaryExtension,
+    blocksize: RowBlockSize<ROW_BLOCKSIZE>,
 ) -> Result<(), Error>
 where
     B::Float: Float + ConstOne + ConstZero + Sum,
     B: BSplinePrefilter<NPOLES>,
 {
+    _ = blocksize;
     let width = NonZeroUsize::new(data.len()).ok_or(Error::NoData)?;
     coefficients1d_2d_blocked_impl::<B, NPOLES, ROW_BLOCKSIZE, 1, 1>(
         bspline,

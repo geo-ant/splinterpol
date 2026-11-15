@@ -25,43 +25,47 @@
 //! ### Step 1: Coefficient Calculation
 //!
 //! To calculate the spline coefficients for a 2D image, the most low-level
-//! way is to use the [`coefficients2d_blocked`] function directly, whose
-//! docs explain the parameters and give some recommendations. However, that
-//! function is quite clunky to use, so prefer to use the builder style
-//! [`Coefficients2d`] wrapper for better ergonomics. Again, the parameters
-//! are documented in [`coefficients2d_blocked`], so please consult its docs.
+//! way is to use the [`coefficients2d`] function directly, whose
+//! docs explain the parameters and give some recommendations.
 //!
-//! For 1D data, the process is analogous, we just use [`coefficients1d_blocked`]
-//! or [`Coefficients1d`] for calculating the coefficients.
+//! For 1D data, the process is analogous, we just use [`coefficients1d`].
 //!
 //! ```rust
 //! # fn foo() {
 //! # use splinterpol::*;
 //! # use splinterpol::bspline::*;
-//! # let mut my_image_data = [10.;90];
+//! # use splinterpol::shared::*;
+//! # let mut some_data = [10.;90];
 //! # let epsilon = 1e-1;
 //! # let width = core::num::NonZero::new(9).unwrap();
 //! # let height = core::num::NonZero::new(10).unwrap();
-//! # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
+//! # use splinterpol::inplace::InplaceBoundaryExtension;
+//! # let data = some_data.as_mut();
+//! let mut image_inout = RowMajor {
+//!     data,
+//!     width,
+//!     height,
+//! };
+//! inplace::coefficients2d(
+//!     BSpline3::<f64>::new(),
+//!     image_inout,
+//!     epsilon,
+//!     // default is whole-symmetric, same as scipy
+//!     InplaceBoundaryExtension::default(),
+//!     // choose this according to your machine, see function docs for guidance
+//!     RowBlockSize::<8>,
+//!     // default row and column block-sizes are 1
+//!     ColBlockSize::default(),
+//! )
+//! .unwrap();
 //!
-//! inplace::Coefficients2d::new(BSpline3::<f64>::new())
-//!     // optional, uses block-size 1 if not given
-//!     .with_row_blocksize::<4>()
-//!     // optional, uses block-size 1 if not given
-//!     .with_column_blocksize::<8>()
-//!     .compute(
-//!         RowMajor {
-//!           data: &mut my_image_data,
-//!           width,
-//!           height,
-//!         },
-//!         epsilon,
-//!         extension,
-//!     ).unwrap();
+//! # // to make sure the comment above is correct
+//! # assert_eq!(InplaceBoundaryExtension::default(), InplaceBoundaryExtension::WholeSymmetric);
+//!
 //! # }
 //! ```
 //!
-//! At this points, `my_image_data` is overwritten with the spline coefficients
+//! At this point, `image_inout` is overwritten with the spline coefficients
 //! and can be used for interpolation.
 //!
 //! ### Step 2: Interpolation
@@ -98,9 +102,8 @@ pub(crate) mod interpolation;
 mod boundary;
 
 pub use boundary::InplaceBoundaryExtension;
-pub use builder::Coefficients2d;
 pub use builder::SplineInterpolator1d;
 pub use builder::SplineInterpolator2d;
 pub use coefficients::coefficients1d_blocked;
-pub use coefficients::coefficients2d_blocked;
+pub use coefficients::coefficients2d;
 pub use interpolation::interp2d_single;

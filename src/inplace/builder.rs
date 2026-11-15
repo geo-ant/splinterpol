@@ -2,7 +2,7 @@ use crate::{
     Error, RowMajor,
     bspline::{BSpline, BSplinePrefilter, BSplineWeights},
     inplace::{InplaceBoundaryExtension, interp2d_single, interpolation::interp1d_single},
-    numerics::FusedMuladd,
+    shared::{ColBlockSize, RowBlockSize},
 };
 use core::{iter::Sum, marker::PhantomData};
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
@@ -228,7 +228,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<2, B, (), RB, CB> 
             width,
             height,
         } = image_data;
-        crate::inplace::coefficients2d_blocked::<_, _, RB, CB>(
+        crate::inplace::coefficients2d(
             bspline,
             RowMajor {
                 data: data.as_mut(),
@@ -237,6 +237,8 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<2, B, (), RB, CB> 
             },
             epsilon,
             boundary_extension,
+            RowBlockSize::<RB>,
+            ColBlockSize::<CB>,
         )?;
         Ok(SplineInterpolator2d {
             coeffs: RowMajor {
@@ -277,11 +279,12 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<1, B, (), RB, CB> 
             coeffs: _coeffs,
             boundary_extension,
         } = self;
-        crate::inplace::coefficients1d_blocked::<_, _, RB>(
+        crate::inplace::coefficients1d_blocked(
             bspline,
             data.as_mut(),
             epsilon,
             boundary_extension,
+            RowBlockSize::<RB>,
         )?;
         Ok(SplineInterpolator1d {
             coeffs: data,
@@ -345,179 +348,5 @@ impl<B, C> SplineInterpolator1d<B, C> {
         B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
     {
         interp1d_single::<B, _>(self.coeffs.as_ref(), self.boundary_extension, pos)
-    }
-}
-
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-/// This is purely a convenience type that acts as a builder to make the
-/// calls to [`crate::inplace::coefficients2d`] and [`crate::inplace::coefficients2d_blocked`]
-/// less awkward to write. It performs _no setup at all_ and only acts as pure
-/// syntax sugar to the method calls. There is no advantage or disadvantage
-/// in terms of computation to using this pattern for coefficient calculation.
-/// The only advantage is nicer syntax.
-///
-/// ## Examples
-///
-/// ### Without Blocking
-///
-/// To replace a call to [`crate::inplace::coefficients2d`] use it as
-///
-///
-/// ```rust
-/// # use splinterpol::*;
-/// # use splinterpol::bspline::*;
-/// # use splinterpol::RowMajor;
-/// # use core::num::NonZero;
-/// # let mut some_data = [10.;90];
-/// # let epsilon = 1e-1;
-/// # let width = NonZero::new(9).unwrap();
-/// # let height = NonZero::new(10).unwrap();
-/// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
-/// let mut data1 = some_data;
-/// let mut data2 = some_data;
-///
-/// // using the rather awkward function call with unit block sizes
-/// inplace::coefficients2d_blocked::<_,_,1,1>(BSpline3::new(),
-///                              RowMajor {
-///                                data: &mut data1,
-///                                width,
-///                                height,
-///                              },
-///                              epsilon,
-///                              extension).unwrap();
-///
-/// // using the builder
-/// inplace::Coefficients2d::new(BSpline3::new())
-///     .compute(
-///         RowMajor {
-///           data: &mut data2,
-///           width,
-///           height,
-///         },
-///         epsilon,
-///         extension,
-///     ).unwrap();
-///
-/// // produces the same coefficients in data1 and data2
-/// assert_eq!(data1,data2);
-/// ```
-///
-/// ### With Blocking
-///
-/// The example above uses block size of `1` for both rows and columns. To explicily
-/// set a non-unit block size for rows and/or columns, use the builder like so:
-///
-/// ```rust
-/// # fn foo() {
-/// # use splinterpol::*;
-/// # use splinterpol::bspline::*;
-/// # let mut some_data = [10.;90];
-/// # let epsilon = 1e-1;
-/// # let width = core::num::NonZero::new(9).unwrap();
-/// # let height = core::num::NonZero::new(10).unwrap();
-/// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
-/// let mut data1 = some_data;
-/// let mut data2 = some_data;
-///
-/// // using the rather awkward function call
-/// inplace::coefficients2d_blocked::<_,_,2,3>(BSpline3::<f64>::new(),
-///                              RowMajor {
-///                                data: &mut data1,
-///                                width,
-///                                height,
-///                              },
-///                              epsilon,
-///                              extension).unwrap();
-///
-/// // using the builder
-/// inplace::Coefficients2d::new(BSpline3::<f64>::new())
-///     .with_row_blocksize::<2>()
-///     .with_column_blocksize::<3>()
-///     .compute(
-///         RowMajor {
-///           data: &mut data2,
-///           width,
-///           height,
-///         },
-///         epsilon,
-///         extension,
-///     ).unwrap();
-///
-/// // produces the same coefficients in data1 and data2
-/// assert_eq!(data1,data2);
-/// # }
-/// ```
-pub struct Coefficients2d<
-    // number of poles of the spline
-    const NPOLES: usize,
-    // bspline to use for interpolationj
-    B: BSplinePrefilter<NPOLES>,
-    // row-blocksize for calculations
-    const RB: usize,
-    // column-blocksize for calculations
-    const CB: usize,
-> {
-    bspline: B,
-}
-
-impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>> Coefficients2d<NPOLES, B, 1, 1> {
-    #[inline(always)]
-    /// create a new builder for computing the coefficients of the given spline
-    /// in-place
-    pub fn new(bspline: B) -> Self {
-        Self { bspline }
-    }
-}
-
-impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize>
-    Coefficients2d<NPOLES, B, RB, 1>
-{
-    #[inline(always)]
-    /// Set the column blocksize for calculation to this nonzero compile time value.
-    /// Defaults to `1` if not given.
-    pub fn with_column_blocksize<const CB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
-        const { assert!(CB > 0) };
-        let Self { bspline } = self;
-        Coefficients2d { bspline }
-    }
-}
-
-impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const CB: usize>
-    Coefficients2d<NPOLES, B, 1, CB>
-{
-    #[inline(always)]
-    /// Set the row blocksize for calculation to this nonzero compile time value
-    /// Defaults to `1` if not given.
-    pub fn with_row_blocksize<const RB: usize>(self) -> Coefficients2d<NPOLES, B, RB, CB> {
-        const { assert!(RB > 0) };
-        let Self { bspline } = self;
-        Coefficients2d { bspline }
-    }
-}
-
-impl<const NPOLES: usize, B: BSplinePrefilter<NPOLES>, const RB: usize, const CB: usize>
-    Coefficients2d<NPOLES, B, RB, CB>
-{
-    #[inline(always)]
-    /// perform the computation to build the interpolator. Again, this is just
-    /// syntax sugar for [`crate::inplace::coefficients2d_blocked`] calls with
-    /// the same arguments. Please consult its documentation for the meaning
-    /// of the parameters and some guidance.
-    pub fn compute(
-        self,
-        image_data: RowMajor<&mut [B::Float]>,
-        epsilon: B::Float,
-        boundary_extension: InplaceBoundaryExtension,
-    ) -> Result<(), Error>
-    where
-        B::Float: Float + ConstOne + ConstZero + Sum + FusedMuladd,
-        B: BSplinePrefilter<NPOLES>,
-    {
-        super::coefficients2d_blocked::<_, _, RB, CB>(
-            self.bspline,
-            image_data,
-            epsilon,
-            boundary_extension,
-        )
     }
 }

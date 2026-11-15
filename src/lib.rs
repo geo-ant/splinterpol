@@ -39,6 +39,7 @@ mod interpn_accuracy;
 pub mod bench_exports;
 
 pub mod inplace;
+pub mod shared;
 
 mod internal;
 mod iter_utils;

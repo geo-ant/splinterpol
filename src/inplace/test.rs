@@ -1,8 +1,6 @@
 use crate::RowMajor;
-use crate::{
-    bspline::*,
-    inplace::{Coefficients2d, coefficients::anticausal_blocked},
-};
+use crate::shared::{ColBlockSize, RowBlockSize};
+use crate::{bspline::*, inplace::coefficients::anticausal_blocked};
 use float_cmp::assert_approx_eq;
 use std::num::NonZero;
 
@@ -12,7 +10,7 @@ use crate::{
     inplace::{
         coefficients::apply_exponential_filter_in_place_1d,
         coefficients::apply_exponential_filter_in_place_1d_iter, coefficients::causal_blocked,
-        coefficients2d_blocked,
+        coefficients2d,
     },
     iter_utils::StridedSliceMut,
     parametrized_test,
@@ -769,10 +767,38 @@ fn test_coefficients2d_bspline3(
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => coefficients2d_blocked::<_, _, 1, 1>(bspline, image_data, epsilon, ext),
-            (6, 7) => coefficients2d_blocked::<_, _, 6, 7>(bspline, image_data, epsilon, ext),
-            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(bspline, image_data, epsilon, ext),
-            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(bspline, image_data, epsilon, ext),
+            (1, 1) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<1>,
+                ColBlockSize::<1>,
+            ),
+            (6, 7) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<6>,
+                ColBlockSize::<7>,
+            ),
+            (7, 6) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<7>,
+                ColBlockSize::<6>,
+            ),
+            (8, 8) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<8>,
+                ColBlockSize::<8>,
+            ),
             (r, c) => {
                 panic!("unsupported blocksize: R={r}, C={c}")
             }
@@ -922,13 +948,38 @@ fn test_coefficients2d_bspline10(
             row_blocksize,
             col_blocksize,
         ) {
-            (1, 1) => Coefficients2d::new(bspline).compute(image_data, epsilon, ext),
-            (6, 7) => Coefficients2d::new(bspline)
-                .with_row_blocksize::<6>()
-                .with_column_blocksize::<7>()
-                .compute(image_data, epsilon, ext),
-            (7, 6) => coefficients2d_blocked::<_, _, 7, 6>(bspline, image_data, epsilon, ext),
-            (8, 8) => coefficients2d_blocked::<_, _, 8, 8>(bspline, image_data, epsilon, ext),
+            (1, 1) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<1>,
+                ColBlockSize::<1>,
+            ),
+            (6, 7) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<6>,
+                ColBlockSize::<7>,
+            ),
+            (7, 6) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<7>,
+                ColBlockSize::<6>,
+            ),
+            (8, 8) => coefficients2d(
+                bspline,
+                image_data,
+                epsilon,
+                ext,
+                RowBlockSize::<8>,
+                ColBlockSize::<8>,
+            ),
             (r, c) => {
                 panic!("unsupported blocksize: R={r}, C={c}")
             }
