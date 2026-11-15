@@ -810,7 +810,7 @@ fn test_coefficients2d_bspline3(
         height: height.try_into().unwrap(),
     };
 
-    coefficients2d_with_blocksize(BSpline3::<f64>::default(), data, epsilon, ext).unwrap();
+    coefficients2d_with_blocksize(&BSpline3::<f64>::default(), data, epsilon, ext).unwrap();
     assert_approx_eq!(
         &[f64],
         &expected.as_slice(),
@@ -991,7 +991,7 @@ fn test_coefficients2d_bspline10(
         width: width.try_into().unwrap(),
         height: height.try_into().unwrap(),
     };
-    coefficients2d_with_blocksize(BSpline10::<f64>::default(), data, epsilon, ext).unwrap();
+    coefficients2d_with_blocksize(&BSpline10::<f64>::default(), data, epsilon, ext).unwrap();
 
     assert_approx_eq!(
         &[f64],

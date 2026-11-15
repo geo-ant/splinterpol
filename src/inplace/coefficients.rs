@@ -129,7 +129,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 ///     height,
 /// };
 /// inplace::coefficients2d(
-///     BSpline3::<f64>::new(),
+///     &BSpline3::<f64>::new(),
 ///     image_inout,
 ///     epsilon,
 ///     // default is whole-symmetric, same as scipy
@@ -162,7 +162,7 @@ pub fn coefficients2d<
     const ROW_BLOCKSIZE: usize,
     const COL_BLOCKSIZE: usize,
 >(
-    bspline: B,
+    bspline: &B,
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,
     boundary_extension: InplaceBoundaryExtension,
@@ -187,8 +187,8 @@ where
 /// assumed as 1D data and overwritten with the coefficients if the function
 /// returns successfully. Naturally, since the data is one-dimensional, there
 /// is only one configurable blocksize.
-pub fn coefficients1d_blocked<B, const NPOLES: usize, const ROW_BLOCKSIZE: usize>(
-    bspline: B,
+pub fn coefficients1d<B, const NPOLES: usize, const ROW_BLOCKSIZE: usize>(
+    bspline: &B,
     data: &mut [B::Float],
     epsilon: B::Float,
     boundary_extension: InplaceBoundaryExtension,
@@ -227,7 +227,7 @@ fn coefficients1d_2d_blocked_impl<
     // not pretty.
     const DIM: i32,
 >(
-    bspline: B,
+    bspline: &B,
     // for 1D we'll just abuse the row major structure with height == 1
     image_data: RowMajor<&mut [B::Float]>,
     epsilon: B::Float,

@@ -47,7 +47,7 @@
 //!     height,
 //! };
 //! inplace::coefficients2d(
-//!     BSpline3::<f64>::new(),
+//!     &BSpline3::<f64>::new(),
 //!     image_inout,
 //!     epsilon,
 //!     // default is whole-symmetric, same as scipy
@@ -104,6 +104,6 @@ mod boundary;
 pub use boundary::InplaceBoundaryExtension;
 pub use builder::SplineInterpolator1d;
 pub use builder::SplineInterpolator2d;
-pub use coefficients::coefficients1d_blocked;
+pub use coefficients::coefficients1d;
 pub use coefficients::coefficients2d;
 pub use interpolation::interp2d_single;

@@ -1,5 +1,4 @@
 #![allow(clippy::excessive_precision)]
-use num_traits::Float;
 
 // NOTE: All B-Splines in this crate implement both the trait
 // for prefiltering and the trait for weight calculation. I've
@@ -48,74 +47,42 @@ pub trait BSpline: Copy + Default + Sealed {
     const DEGREE: usize;
 }
 
-/// BSpline of degree 2
 #[derive(Debug, Clone, Copy)]
-pub struct BSpline2<T: Float> {
-    // NOTE(geo) due to limited rust generics, we have to put the number
-    // of poles in here, which must match the number of poles in the prefilter
-    // trait. This match will be enforced at compile time, so it's fine.
-    poles: [T; 1],
+/// Unifying underlying type for BSplines of all degrees with floating point type
+/// `T`. Only BSplines of degree 2 up to 12 are actually usable in this library.
+///
+/// Due to limitations in Rust's const generics, we have to make this type
+/// generic over the polynomial degree `DEGREE` and the number of poles `NPOLES`,
+/// when in fact for any BSpline `NPOLES = floor(DEGREE/2)`. That's why all
+/// usable BSplines in this library have aliases indicating their degree,
+/// such as `BSpline2`, `BSpline3`, ... , `BSpline12`. Still, this type _might_
+/// come in handy in interfaces accepting BSplines generically.
+pub struct BasisSpline<T, const DEGREE: usize, const NPOLES: usize> {
+    poles: [T; NPOLES],
 }
 
-/// BSpline of degree 3
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline3<T: Float> {
-    poles: [T; 1],
-}
-
-/// BSpline of degree 4
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline4<T> {
-    poles: [T; 2],
-}
-
-/// BSpline of degree 5
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline5<T> {
-    poles: [T; 2],
-}
-
-/// BSpline of degree 6
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline6<T> {
-    poles: [T; 3],
-}
-
-/// BSpline of degree 7
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline7<T> {
-    poles: [T; 3],
-}
-
-/// BSpline of degree 8
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline8<T> {
-    poles: [T; 4],
-}
-
-/// BSpline of degree 9
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline9<T> {
-    poles: [T; 4],
-}
-
-/// BSpline of degree 10
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline10<T> {
-    poles: [T; 5],
-}
-
-/// B-spline of degree 11
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline11<T> {
-    poles: [T; 5],
-}
-
-/// B-spline of degree 12
-#[derive(Debug, Clone, Copy)]
-pub struct BSpline12<T> {
-    poles: [T; 6],
-}
+/// BSpline of polynomial degree 2
+pub type BSpline2<T> = BasisSpline<T, 2, 1>;
+/// BSpline of polynomial degree 3
+pub type BSpline3<T> = BasisSpline<T, 3, 1>;
+/// BSpline of polynomial degree 4
+pub type BSpline4<T> = BasisSpline<T, 4, 2>;
+/// BSpline of polynomial degree 5
+pub type BSpline5<T> = BasisSpline<T, 5, 2>;
+/// BSpline of polynomial degree 6
+pub type BSpline6<T> = BasisSpline<T, 6, 3>;
+/// BSpline of polynomial degree 7
+pub type BSpline7<T> = BasisSpline<T, 7, 3>;
+/// BSpline of polynomial degree 8
+pub type BSpline8<T> = BasisSpline<T, 8, 4>;
+/// BSpline of polynomial degree 9
+pub type BSpline9<T> = BasisSpline<T, 9, 4>;
+/// BSpline of polynomial degree 10
+pub type BSpline10<T> = BasisSpline<T, 10, 5>;
+/// BSpline of polynomial degree 11
+pub type BSpline11<T> = BasisSpline<T, 11, 5>;
+/// BSpline of polynomial degree 12
+pub type BSpline12<T> = BasisSpline<T, 12, 6>;
 
 macro_rules! impl_bspline {
     ($spline:ident, $degree:literal) => {

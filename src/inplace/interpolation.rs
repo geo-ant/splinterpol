@@ -7,7 +7,6 @@ use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive
 #[cfg(test)]
 mod test;
 
-#[inline]
 /// Interpolate a single point at floating point indices for `row` and `col`
 /// of the image.
 ///
@@ -27,6 +26,7 @@ mod test;
 /// by `boundary_condition` is used to extrapolate the values beyond the grid.
 /// While this makes the library internally consistent, it should be obvious
 /// that this is _not useful_ for actual prediction. Don't use it for that!
+#[inline]
 pub fn interp2d_single<B, const NW: usize>(
     coeffs2d: RowMajor<&[B::Float]>,
     boundary_extension: InplaceBoundaryExtension,

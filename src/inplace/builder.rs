@@ -229,7 +229,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<2, B, (), RB, CB> 
             height,
         } = image_data;
         crate::inplace::coefficients2d(
-            bspline,
+            &bspline,
             RowMajor {
                 data: data.as_mut(),
                 width,
@@ -279,8 +279,8 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<1, B, (), RB, CB> 
             coeffs: _coeffs,
             boundary_extension,
         } = self;
-        crate::inplace::coefficients1d_blocked(
-            bspline,
+        crate::inplace::coefficients1d(
+            &bspline,
             data.as_mut(),
             epsilon,
             boundary_extension,
