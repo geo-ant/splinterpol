@@ -1,4 +1,5 @@
 use crate::RowMajor;
+use crate::shared::Coord;
 use crate::{
     Error, bspline::BSplineWeights, inplace::InplaceBoundaryExtension, numerics::FloatVector,
 };
@@ -7,14 +8,16 @@ use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive
 #[cfg(test)]
 mod test;
 
-/// Interpolate a single point at floating point indices for `row` and `col`
-/// of the image.
+/// Interpolate a single point at floating point coordinate `coord` of the image.
 ///
-/// **Attention**: this function indexes the rows and columns of the
-/// image where `(row, col) = (y,x)` in the typical `x`, `y` coordinate system.
+/// **Attention (1)**: Using this function on its own requires passing the same
+/// boundary extension and spline type that was used to compute the coefficients.
+/// If you can use the [`SplineInterpolator1d`](crate::inplace::SplineInterpolator1d)
+/// high level interface to this library, please do so as it provides a much more
+/// convenient zero-cost interface that manages this mental load for you.
 ///
 /// The function accepts the 2D B-Spline coefficients `coeffs2d` in row-major
-/// order, that should have been calculated with
+/// order, that must have been calculated with
 /// [`coefficients2d`](`crate::inplace::coefficients2d`) with a B-Spline of
 /// type `B`, precision `epsilon`, and boundary extension `boundary_ext`.
 ///
@@ -27,19 +30,53 @@ mod test;
 ///
 /// ## Example
 ///
-/// TODO!!!!!!!!!!!!!!
+/// This assumes that the coefficients were already generate
 ///
+/// ```rust
+/// # use splinterpol::inplace::interp2d_single;
+/// # use core::num::NonZeroUsize;
+/// # use splinterpol::*;
+/// # use splinterpol::bspline::*;
+/// # use splinterpol::shared::*;
+/// # let epsilon = 1e-1;
+/// # let width = core::num::NonZero::new(9).unwrap();
+/// # let height = core::num::NonZero::new(10).unwrap();
+/// # use splinterpol::inplace::InplaceBoundaryExtension;
+/// # fn foo(some_data:& [f64], width: NonZeroUsize, height: NonZeroUsize, boundary_ext: InplaceBoundaryExtension) {
+/// let mut coeffs = RowMajor {
+///   data: some_data.as_ref(),
+///   width,
+///   height
+/// };
+///
+/// //                          must be the same type as was used
+/// //                          for calculating the coefficients
+/// //                           |
+/// //                           |              always inferred, leave as _
+/// //                           |               |
+/// //                           v               v
+/// let val = interp2d_single::<BSpline3::<f64>, _>(
+///   coeffs,
+///   // boundary extension must be the same that was
+///   // used for computing coefficients
+///   boundary_ext,
+///   Coord::x(1.3).y(3.7)
+/// ).unwrap();
+///
+/// # }
+/// ```
 #[inline]
 pub fn interp2d_single<B, const NW: usize>(
     coeffs2d: RowMajor<&[B::Float]>,
     boundary_extension: InplaceBoundaryExtension,
     // NOTE: just keep in mind that `x` is the column-index and `y` is the row index
-    (row, col): (B::Float, B::Float),
+    coord: Coord<B::Float>,
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
     B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
 {
+    let Coord { row, col } = coord;
     // NOTE: see the B::weights function. The left hand size index must be (x-R).ceil(), where
     // `x` is the floating point row or column index and R is the radius of the spline.
     let fc0 = (col - B::radius()).ceil();

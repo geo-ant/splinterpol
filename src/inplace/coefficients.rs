@@ -18,13 +18,6 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// interpolation with the given B-Spline, see e.g.
 /// [`interp2d_single`](crate::inplace::interpolation::interp2d_single). This step is also called _prefiltering_.
 ///
-/// The function is a bit awkward to call because two of the generic arguments
-/// (`ROW_BLOCKSIZE` and `COL_BLOCKSIZE`) must be explicitly given, which means
-/// that the other arguments have to be written as well (but can be inferred
-/// with `_`). This is why the [`Coefficients2D`](crate::inplace::Coefficients2d)
-/// structure exists, which provides a builder style interface to this function
-/// call just for ergonomics.
-///
 /// Note also that a more high level interface to the workflow of calculating
 /// the coefficients and then using them for interpolation exists with
 /// [`crate::inplace::SplineInterpolator2d`].
@@ -181,7 +174,7 @@ where
     )
 }
 
-/// Same as [`coefficients2d_blocked`] but for 1D data. The given `data` is
+/// Same as [`coefficients2d`] but for 1D data. The given `data` is
 /// assumed as 1D data and overwritten with the coefficients if the function
 /// returns successfully. Naturally, since the data is one-dimensional, there
 /// is only one configurable blocksize.

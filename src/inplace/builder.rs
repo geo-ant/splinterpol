@@ -2,7 +2,7 @@ use crate::{
     Error, RowMajor,
     bspline::{BSpline, BSplinePrefilter, BSplineWeights},
     inplace::{InplaceBoundaryExtension, interp2d_single, interpolation::interp1d_single},
-    shared::{ColBlockSize, RowBlockSize},
+    shared::{ColBlockSize, Coord, RowBlockSize},
 };
 use core::{iter::Sum, marker::PhantomData};
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
@@ -22,9 +22,10 @@ mod test;
 /// ```rust
 /// # fn foo() {
 /// # use splinterpol::*;
-/// use splinterpol::bspline::*;
-/// use splinterpol::inplace::SplineInterpolator2d;
-/// use splinterpol::inplace::InplaceBoundaryExtension::*;
+/// # use splinterpol::bspline::*;
+/// # use splinterpol::inplace::SplineInterpolator2d;
+/// # use splinterpol::inplace::InplaceBoundaryExtension::*;
+/// # use splinterpol::shared::Coord;
 /// # let mut data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
@@ -33,23 +34,23 @@ mod test;
 /// # let image_data = RowMajor {data, width, height};
 ///
 /// let interp = SplineInterpolator2d::builder(BSpline3::new())
-///                // this is optional and defaults to whole-symmetric extension
-///                .extension(WholeSymmetric)
-///                // giving the block sizes for computation is optional and
-///                // defaults to `1`. Block sizes are in number of elements,
-///                // not bytes.
-///                .row_blocksize::<8>()
-///                .col_blocksize::<1>()
-///                // this is mandatory and finalizes the builder by the
-///                // computing the spline coefficients. After this, we can
-///                // perform interpolation
-///                .build(image_data, epsilon)
-///                .unwrap();
+///     // this is optional and defaults to whole-symmetric extension
+///     .extension(WholeSymmetric)
+///     // giving the block sizes for computation is optional and
+///     // defaults to `1`. Block sizes are in number of elements,
+///     // not bytes.
+///     .row_blocksize::<8>()
+///     .col_blocksize::<1>()
+///     // this is mandatory and finalizes the builder by the
+///     // computing the spline coefficients. After this, we can
+///     // perform interpolation
+///     .build(image_data, epsilon)
+///     .unwrap();
 ///
 /// // now use the interpolator to find the values at arbitraty points in
 /// // the image
 ///
-/// let value = interp.interp_single(1.5, 2.4);
+/// let value = interp.interp_single(Coord::x(1.5).y(2.4)).unwrap();
 /// # }
 /// ```
 pub struct SplineInterpolator2d<B, C> {
@@ -80,28 +81,28 @@ pub struct SplineInterpolator2d<B, C> {
 /// # fn foo() {
 /// # use splinterpol::*;
 /// use splinterpol::bspline::*;
-/// use splinterpol::inplace::SplineInterpolator1d;
 /// use splinterpol::inplace::InplaceBoundaryExtension::*;
+/// use splinterpol::inplace::SplineInterpolator1d;
 /// # let mut data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let extension = splinterpol::inplace::InplaceBoundaryExtension::Periodic;
 ///
 /// let interp = SplineInterpolator1d::builder(BSpline3::new())
-///                // this is optional and defaults to whole-symmetric extension
-///                .extension(WholeSymmetric)
-///                // giving the block size for computation is optional and
-///                // defaults to `1`. Block size is in number of elements,
-///                // not bytes.
-///                .row_blocksize::<8>()
-///                // this is mandatory and finalizes the builder by the
-///                // computing the spline coefficients. After this, we can
-///                // perform interpolation
-///                .build(data, epsilon)
-///                .unwrap();
+///     // this is optional and defaults to whole-symmetric extension
+///     .extension(WholeSymmetric)
+///     // giving the block size for computation is optional and
+///     // defaults to `1`. Block size is in number of elements,
+///     // not bytes.
+///     .row_blocksize::<8>()
+///     // this is mandatory and finalizes the builder by the
+///     // computing the spline coefficients. After this, we can
+///     // perform interpolation
+///     .build(data, epsilon)
+///     .unwrap();
 ///
 /// // now use the interpolator to find the values at an arbitraty position
 ///
-/// let value = interp.interp_single(1.5);
+/// let value = interp.interp_single(1.5).unwrap();
 /// # }
 /// ```
 pub struct SplineInterpolator1d<B, C> {
@@ -204,7 +205,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<2, B, (), RB, CB> 
     /// given `image_data`.
     ///
     /// To understand the meaning of `epsilon` and its recommended values, see
-    /// the documentation of [`crate::inplace::coefficients2d_blocked`].
+    /// the documentation of [`crate::inplace::coefficients2d`].
     /// In short, `epsilon` bounds the _relative_ accuracy of the interpolation
     /// _on the original grid points_. A conservative rule of thumb is to chose
     /// `1e-12` for `f64` data and `1e-6` for `f32`.
@@ -296,14 +297,10 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<1, B, (), RB, CB> 
 
 impl<B, C> SplineInterpolator2d<B, C> {
     /// Interpolate the value of a single point at the given floating point
-    /// indices for the `row` and `column` of the image.
-    ///
-    /// **Attention**: this function indexes `(row, col)`, which
-    /// is `(y,x)` in the common `x,y` coordinate system.
+    /// coordinate `coord` in the image.
     pub fn interp_single<const NWEIGHTS: usize>(
         &self,
-        row: B::Float,
-        col: B::Float,
+        coord: Coord<B::Float>,
     ) -> Result<B::Float, Error>
     where
         C: AsRef<[B::Float]>,
@@ -319,7 +316,7 @@ impl<B, C> SplineInterpolator2d<B, C> {
                 height,
             },
             self.boundary_extension,
-            (row, col),
+            coord,
         )
     }
 }

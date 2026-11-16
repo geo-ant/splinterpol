@@ -95,7 +95,7 @@ pub fn blocked_expf64_strided_iter(
     alpha: f64,
     signal: &mut [f64],
     stride: NonZero<usize>,
-    //NOTE: in theory, this N can be larger than the amount of elements
+    // NOTE: in theory, this N can be larger than the amount of elements
     // but we're restricting it here
     // TODO: if we want to allow this to be larger, we would have to have
     // temporary storage for the original elements and implement some wraparound,

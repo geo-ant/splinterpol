@@ -5,8 +5,7 @@
 //!
 //! ## High-level Interface
 //!
-//! The [`SplineInterpolator1d`](crate::inplace::SplineInterpolator1d) and
-//! [`SplineInterpolator2d`](crate::inplace::SplineInterpolator2d) are a
+//! The [`SplineInterpolator1d`] and [`SplineInterpolator2d`] are a
 //! zero-overhead, high level interface to the 1D and 2D interpolation functionality
 //! of this library. It's the recommended way of interacting with this library
 //! and offers the same configuration options as the low-level interface.
@@ -69,8 +68,7 @@
 //! Now that we have the coefficients, we can use them for interpolation using
 //! the second half of the low-level interface. The general purpose entry point
 //! for interpolating an arbitraty floating point coordinate on the grid are
-//! [`interp1d_single`](crate::inplace::interpolation::interp1d_single) and
-//! [`interp2d_single`](crate::inplace::interpolation::interp2d_single). The
+//! [`interp1d_single`] and [`interp2d_single`]. The
 //! following code shows how to use the previously calculated coefficients
 //! for interpolation.
 //!
@@ -80,17 +78,16 @@
 //! high-level interface takes care of this automatically.
 //!
 //! ```rust
-//! # use crate::inplace::interpolation::interp2d_single;
+//! # use splinterpol::inplace::interp2d_single;
 //! # use core::num::NonZeroUsize;
 //! # use splinterpol::*;
 //! # use splinterpol::bspline::*;
 //! # use splinterpol::shared::*;
-//! # let mut some_data = [10.;90];
 //! # let epsilon = 1e-1;
 //! # let width = core::num::NonZero::new(9).unwrap();
 //! # let height = core::num::NonZero::new(10).unwrap();
-//! # use splinterpol::inplace::InplaceBoundaryExtension;//!
-//! # fn foo(data:& [f64], width: NonZeroUsize, height: NonZeroUsize, boundary_ext: InplaceBoundaryExtension) {
+//! # use splinterpol::inplace::InplaceBoundaryExtension;
+//! # fn foo(some_data:& [f64], width: NonZeroUsize, height: NonZeroUsize, boundary_ext: InplaceBoundaryExtension) {
 //! let mut coeffs = RowMajor {
 //!   data: some_data.as_ref(),
 //!   width,
@@ -100,16 +97,16 @@
 //! //                          must be the same type as was used
 //! //                          for calculating the coefficients
 //! //                           |
-//! //                           |               always inferred
+//! //                           |              always inferred, leave as _
 //! //                           |               |
 //! //                           v               v
-//! let val = interp2d_single::<BSpline3::<f64>, _>::(
+//! let val = interp2d_single::<BSpline3::<f64>, _>(
 //!   coeffs,
-//!   // must be the same that was used for the coefficients
+//!   // boundary extension must be the same that was
+//!   // used for computing coefficients
 //!   boundary_ext,
+//!   Coord::row(3.7).col(1.3)
 //! ).unwrap();
-//!
-//! foo!
 //!
 //! # }
 //! ```
@@ -141,4 +138,5 @@ pub use builder::SplineInterpolator1d;
 pub use builder::SplineInterpolator2d;
 pub use coefficients::coefficients1d;
 pub use coefficients::coefficients2d;
+pub use interpolation::interp1d_single;
 pub use interpolation::interp2d_single;

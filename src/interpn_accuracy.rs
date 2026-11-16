@@ -2,6 +2,7 @@ use crate::{
     RowMajor,
     bspline::BSpline3,
     inplace::{InplaceBoundaryExtension, SplineInterpolator2d},
+    shared::Coord,
     test_utils::read_f32le_asf64,
 };
 
@@ -165,8 +166,11 @@ fn absolute_accuracy_on_gridpoints_vs_interpn(
             let interpn_error = (interpn_interpolator.interp_one([r as _, c as _]).unwrap()
                 - original.at(r, c))
             .abs();
-            let this_error =
-                (interpolator.interp_single(r as _, c as _).unwrap() - original.at(r, c)).abs();
+            let this_error = (interpolator
+                .interp_single(Coord::row(r as _).col(c as _))
+                .unwrap()
+                - original.at(r, c))
+            .abs();
             assert!(
                 // see above: interpn has no error on the grid points except
                 // for floating point error.

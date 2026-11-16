@@ -1,5 +1,6 @@
 use crate::RowMajor;
 use crate::inplace::builder::SplineInterpolator2d;
+use crate::shared::Coord;
 use crate::test_utils::iter_cross;
 use crate::{
     bspline::*,
@@ -202,7 +203,7 @@ fn input_is_reproduced_within_relative_error_on_original_grid2d<B, const NP: usi
     let mut discrepancies = Vec::new();
     for r in 0..original.height.get() {
         for c in 0..original.width.get() {
-            let actual = interpolator.interp_single(r as f64, c as f64).unwrap();
+            let actual = interpolator.interp_single(Coord::row(r as f64).col(c as f64)).unwrap();
             let expected = *original.at(r, c);
             abs_sum += expected.abs();
             if !approx_eq!(
@@ -274,7 +275,9 @@ fn interpolation_for_synthetic_image2d<T, B, const NP: usize, const NW: usize>(
     for ridx in 0..original.height.get() {
         for cidx in 0..original.width.get() {
             let actual = interpolator
-                .interp_single(T::from_usize(ridx).unwrap(), T::from_usize(cidx).unwrap())
+                .interp_single(
+                    Coord::row(T::from_usize(ridx).unwrap()).col(T::from_usize(cidx).unwrap()),
+                )
                 .unwrap();
             let expected = *original.at(ridx, cidx);
             abs_sum = abs_sum + expected.abs();
@@ -309,7 +312,9 @@ fn interpolation_for_synthetic_image2d<T, B, const NP: usize, const NW: usize>(
             for (dr, dc) in iter_cross([0.1 /*, 0.5, 0.9*/], [0.1 /*, 0.5, 0.9*/]) {
                 let r = ridx as f64 + dr;
                 let c = cidx as f64 + dc;
-                let actual = interpolator.interp_single(r.as_(), c.as_()).unwrap();
+                let actual = interpolator
+                    .interp_single(Coord::row(r.as_()).col(c.as_()))
+                    .unwrap();
                 let expected = synth_image.at(r, c).as_();
                 abs_sum = abs_sum + expected.abs();
                 if !approx_eq!(
