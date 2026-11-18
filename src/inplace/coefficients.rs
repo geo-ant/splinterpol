@@ -1,7 +1,7 @@
+use crate::ColBlockSize;
 use crate::Error;
+use crate::RowBlockSize;
 use crate::RowMajor;
-use crate::shared::ColBlockSize;
-use crate::shared::RowBlockSize;
 use crate::{
     bspline::BSplinePrefilter,
     inplace::InplaceBoundaryExtension,
@@ -109,7 +109,6 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// # fn foo() {
 /// # use splinterpol::*;
 /// # use splinterpol::bspline::*;
-/// # use splinterpol::shared::*;
 /// # let mut some_data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();

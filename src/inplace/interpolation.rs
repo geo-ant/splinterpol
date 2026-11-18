@@ -1,5 +1,5 @@
+use crate::Coord;
 use crate::RowMajor;
-use crate::shared::Coord;
 use crate::{
     Error, bspline::BSplineWeights, inplace::InplaceBoundaryExtension, numerics::FloatVector,
 };
@@ -37,7 +37,6 @@ mod test;
 /// # use core::num::NonZeroUsize;
 /// # use splinterpol::*;
 /// # use splinterpol::bspline::*;
-/// # use splinterpol::shared::*;
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
 /// # let height = core::num::NonZero::new(10).unwrap();

@@ -33,7 +33,6 @@
 //! # fn foo() {
 //! # use splinterpol::*;
 //! # use splinterpol::bspline::*;
-//! # use splinterpol::shared::*;
 //! # let mut some_data = [10.;90];
 //! # let epsilon = 1e-1;
 //! # let width = core::num::NonZero::new(9).unwrap();
@@ -78,11 +77,10 @@
 //! high-level interface takes care of this automatically.
 //!
 //! ```rust
-//! # use splinterpol::inplace::interp2d_single;
-//! # use core::num::NonZeroUsize;
 //! # use splinterpol::*;
 //! # use splinterpol::bspline::*;
-//! # use splinterpol::shared::*;
+//! # use core::num::NonZeroUsize;
+//! # use splinterpol::inplace::interp2d_single;
 //! # let epsilon = 1e-1;
 //! # let width = core::num::NonZero::new(9).unwrap();
 //! # let height = core::num::NonZero::new(10).unwrap();

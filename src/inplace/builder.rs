@@ -1,8 +1,7 @@
 use crate::{
-    Error, RowMajor,
+    ColBlockSize, Coord, Error, RowBlockSize, RowMajor,
     bspline::{BSpline, BSplinePrefilter, BSplineWeights},
     inplace::{InplaceBoundaryExtension, interp2d_single, interpolation::interp1d_single},
-    shared::{ColBlockSize, Coord, RowBlockSize},
 };
 use core::{iter::Sum, marker::PhantomData};
 use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive};
@@ -10,7 +9,7 @@ use num_traits::{ConstOne, ConstZero, Float, FromPrimitive, NumCast, ToPrimitive
 #[cfg(test)]
 mod test;
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 /// High-level interface to spline-interpolation of 2D images. Construct
 /// an instance of this by using the builder pattern in the example below.
 /// The interpolator takes ownership of the image data and the builder
@@ -25,7 +24,6 @@ mod test;
 /// # use splinterpol::bspline::*;
 /// # use splinterpol::inplace::SplineInterpolator2d;
 /// # use splinterpol::inplace::InplaceBoundaryExtension::*;
-/// # use splinterpol::shared::Coord;
 /// # let mut data = [10.;90];
 /// # let epsilon = 1e-1;
 /// # let width = core::num::NonZero::new(9).unwrap();
@@ -115,6 +113,7 @@ pub struct SplineInterpolator1d<B, C> {
 /// building a spline interpolator in 1d or 2d.
 // NOTE: we're using `DIM` here to differentiate between 1d and 2d code where
 // necessary, and share the other code otherwise.
+#[derive(Debug)]
 pub struct SplineInterpBuilder<const DIM: usize, B, C, const RB: usize, const CB: usize> {
     bspline: B,
     coeffs: C,

@@ -12,6 +12,10 @@ The high-level interface for 2D image interpolation is shown below and it
 should be preferred because it offers good usability without runtime penalties.
 
 ```rust
+use splinterpol::*;
+use splinterpol::bspline::*;
+use splinterpol::inplace::InplaceBoundaryExtension::*;
+use splinterpol::inplace::SplineInterpolator2d;
 // actual image data in row-major layout.
 // Anything that you can convert into // a (mutable) slice will do.
 let mut data = vec![1.; 1024 * 768];

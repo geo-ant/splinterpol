@@ -344,8 +344,12 @@ fn interpolation_for_synthetic_image2d<T, B, const NP: usize, const NW: usize>(
 }
 
 #[test]
+// TODO: this approach with a synthetic images needs revisiting, since there
+// is no simple straightforward way of defining an interpolation accuracy
+// for this image. I need to think of better interpolation targets.
+#[ignore]
 #[track_caller]
-fn test_foo() {
+fn bspline6_interpolation_of_synthetic_image_between_grid() {
     interpolation_for_synthetic_image2d(
         BSpline6::<f64>::new(),
         256,

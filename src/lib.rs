@@ -39,12 +39,15 @@ mod interpn_accuracy;
 pub mod bench_exports;
 
 pub mod inplace;
-pub mod shared;
+pub(crate) mod shared;
+pub use shared::ColBlockSize;
+pub use shared::Coord;
+pub use shared::RowBlockSize;
+pub use shared::RowMajor;
+pub use shared::UnfinishedCoord;
 
 mod internal;
 mod iter_utils;
-mod row_major;
-pub use row_major::RowMajor;
 mod util;
 
 mod sealed;
