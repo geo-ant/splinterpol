@@ -113,6 +113,36 @@ where
 }
 
 #[inline]
+/// This works just like [`interp2d_single`], except that it works in 1D. That
+/// means the coefficients need to have been generated with [`coefficients1d`](crate::inplace::coefficients1d)
+/// using the same spline type `B` and the same `boundary_extension`.
+///
+/// ```rust
+/// # use splinterpol::inplace::interp1d_single;
+/// # use core::num::NonZeroUsize;
+/// # use splinterpol::*;
+/// # use splinterpol::bspline::*;
+/// # let epsilon = 1e-1;
+/// # let width = core::num::NonZero::new(9).unwrap();
+/// # let height = core::num::NonZero::new(10).unwrap();
+/// # use splinterpol::inplace::InplaceBoundaryExtension;
+/// # fn foo(coeffs:& [f64], width: NonZeroUsize, height: NonZeroUsize, boundary_ext: InplaceBoundaryExtension) {
+/// //                          must be the same type as was used
+/// //                          for calculating the coefficients
+/// //                           |
+/// //                           |              always inferred, leave as _
+/// //                           |               |
+/// //                           v               v
+/// let val = interp1d_single::<BSpline3::<f64>, _>(
+///   coeffs,
+///   // boundary extension must be the same that was
+///   // used for computing coefficients
+///   boundary_ext,
+///   12.34
+/// ).unwrap();
+///
+/// # }
+/// ```
 pub fn interp1d_single<B, const NW: usize>(
     coeffs: &[B::Float],
     boundary_extension: InplaceBoundaryExtension,
