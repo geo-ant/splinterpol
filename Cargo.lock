@@ -596,6 +596,7 @@ dependencies = [
  "num-traits",
  "paste",
  "rand",
+ "rayon",
  "test-case",
 ]
 

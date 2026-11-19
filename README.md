@@ -111,7 +111,10 @@ a similar purpose:
   `interpn` offers n-dimensional interpolation on regular and rectilinear grids,
   but restricts itself to degree 3 or less for interpolation. Both crates are
   `no-std` and `no-alloc` compatible and should be well suited even for resource
-  constrained environments.
+  constrained environments. `interpn` imposes zero third derivatives on the
+  boundary spans, while `splinterpol` offers different continuations to define
+  boundary conditions. As always in life and engineering _it depends_ which
+  choice is more appropriate.
 * [`ninterp v0.11`](https://docs.rs/ninterp/latest/ninterp/): offers n-dimensional
   interpolation up to 3rd order on rectilinear grids. It's no-std compatible, but
   isn't no-alloc and introduces `ndarray` as a dependency.

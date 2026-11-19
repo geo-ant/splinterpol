@@ -2,36 +2,16 @@ use core::num::NonZero;
 use core::ops::Range;
 use criterion::{BenchmarkGroup, BenchmarkId, Criterion, criterion_group, criterion_main};
 use num_traits::{Float, FromPrimitive};
-use rand::{
-    RngExt, SeedableRng,
-    distr::uniform::{SampleRange, SampleUniform},
-    rngs::{ThreadRng, Xoshiro256PlusPlus},
-};
 use splinterpol::{
     bench_exports::apply_exponential_filter_in_place, bench_exports::compute_truncation_indices,
     inplace::InplaceBoundaryExtension,
 };
 
-fn make_random_data<F: Float + FromPrimitive + SampleUniform>(
-    len: usize,
-    range: Range<F>,
-    seed: Option<u64>,
-) -> Vec<F>
-where
-    Range<F>: SampleRange<F>,
-{
-    let mut rng = match seed {
-        Some(seed) => Xoshiro256PlusPlus::seed_from_u64(seed),
-        None => {
-            let mut rng = ThreadRng::default();
-            Xoshiro256PlusPlus::from_rng(&mut rng)
-        }
-    };
-    (0..len).map(|_| rng.random_range(range.clone())).collect()
-}
+use shared::make_random_data;
+mod shared;
 
 fn bench_exponential_filter(c: &mut Criterion) {
-    let sizes = [100, 128, 1000, 1024, 10000, 16384, 60000, 65536];
+    let sizes = [127, 128, 129, 4095, 4096, 4097];
     // this is a small pole taken from the actual spline implementations
     let pole = -1.698276282327549e-5;
     // pristine source data; each iteration filters a fresh copy so we always
@@ -48,6 +28,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
     let trunc_idx = compute_truncation_indices(&[pole], epsilon).unwrap()[0];
 
     for size in sizes {
+        group.throughput(criterion::Throughput::Elements(size as u64));
         for ext in [
             InplaceBoundaryExtension::Reflected,
             InplaceBoundaryExtension::WholeSymmetric,
@@ -61,12 +42,11 @@ fn bench_exponential_filter(c: &mut Criterion) {
                         b.iter_batched(
                             || data[0..size].to_vec(),
                             |mut data| {
-                                let len = data.len();
                                 apply_exponential_filter_in_place::<_, 1>(
                                     std::hint::black_box(pole),
                                     data.as_mut_slice(),
                                     trunc_idx,
-                                    InplaceBoundaryExtension::Periodic,
+                                    ext,
                                 )
                                 .unwrap();
                                 std::hint::black_box(data)
@@ -74,8 +54,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
                             criterion::BatchSize::LargeInput,
                         );
                     },
-                )
-                .throughput(criterion::Throughput::Elements(size as _));
+                );
 
             group
                 .bench_with_input(
@@ -85,12 +64,11 @@ fn bench_exponential_filter(c: &mut Criterion) {
                         b.iter_batched(
                             || data[0..size].to_vec(),
                             |mut data| {
-                                let len = data.len();
                                 apply_exponential_filter_in_place::<_, 8>(
                                     std::hint::black_box(pole),
                                     data.as_mut_slice(),
-                                    len / 5,
-                                    InplaceBoundaryExtension::Periodic,
+                                    trunc_idx,
+                                    ext,
                                 )
                                 .unwrap();
                                 std::hint::black_box(data)
@@ -98,8 +76,7 @@ fn bench_exponential_filter(c: &mut Criterion) {
                             criterion::BatchSize::LargeInput,
                         );
                     },
-                )
-                .throughput(criterion::Throughput::Elements(size as _));
+                );
         }
     }
 }
