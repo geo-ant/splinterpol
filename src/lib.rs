@@ -115,7 +115,7 @@ pub fn blocked_expf64_strided_iter(
         crate::iter_utils::StridedAccessArgs {
             offset: 0,
             stride,
-            count: NonZero::new(signal.len() / stride.get()).unwrap(),
+            count: NonZero::new(signal.len() / stride).unwrap(),
         },
     )
     .ok_or(Error::Dimensions)?;
@@ -153,7 +153,7 @@ pub fn expf64_strided_iter(
         crate::iter_utils::StridedAccessArgs {
             offset: 0,
             stride,
-            count: NonZero::new(signal.len() / stride.get()).unwrap(),
+            count: NonZero::new(signal.len() / stride).unwrap(),
         },
     )
     .ok_or(Error::Dimensions)?;

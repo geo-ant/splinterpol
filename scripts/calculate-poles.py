@@ -77,9 +77,9 @@ SIGNIFICANT_DIGITS = 45
 MAX_DEGREE = 12
 
 print("#![allow(clippy::excessive_precision)]")
-print("/// *** AUTO GENERATED. DO NOT EDIT ***")
-print(f"/// Poles of B-Splines with degrees 2,...,{MAX_DEGREE}")
-print(f"/// auto-generated with scripts/calculate_poles.py\n\n")
+print("// *** AUTO GENERATED. DO NOT EDIT ***")
+print(f"// Poles of B-Splines with degrees 2,...,{MAX_DEGREE}")
+print(f"// auto-generated with scripts/calculate_poles.py\n\n")
 for degree in range(2,MAX_DEGREE+1):
     coeff = compute_z_transform_coefficients(degree)
     poly = make_polynomial(coeff)

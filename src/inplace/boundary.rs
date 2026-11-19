@@ -14,7 +14,7 @@ mod test;
 /// ## References
 ///
 /// * [B&M](https://www.ipol.im/pub/art/2018/221/) T. Briand, P. Monasse: "Theory
-/// and Practice of Image B-Spline Interpolation"
+///   and Practice of Image B-Spline Interpolation"
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 #[repr(u8)]
 pub enum InplaceBoundaryExtension {

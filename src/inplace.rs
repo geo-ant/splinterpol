@@ -112,7 +112,7 @@
 //! ## References
 //!
 //! * [B&M](https://www.ipol.im/pub/art/2018/221/) T. Briand, P. Monasse: "Theory
-//! and Practice of Image B-Spline Interpolation"
+//!   and Practice of Image B-Spline Interpolation"
 
 #[cfg(test)]
 mod test;

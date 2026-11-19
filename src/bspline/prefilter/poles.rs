@@ -1,7 +1,7 @@
 #![allow(clippy::excessive_precision)]
-/// *** AUTO GENERATED. DO NOT EDIT ***
-/// Poles of B-Splines with degrees 2,...,11
-/// auto-generated with scripts/calculate_poles.py
+// *** AUTO GENERATED. DO NOT EDIT ***
+// Poles of B-Splines with degrees 2,...,11
+// auto-generated with scripts/calculate_poles.py
 
 /// poles for B-Spline of degree 2
 pub const BSPLINE2_POLES: [f64; 1] = [-1.71572875253809902396622551580603842860656249e-1];
