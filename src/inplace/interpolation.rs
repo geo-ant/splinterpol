@@ -160,7 +160,7 @@ where
     Ok(c.dot(w))
 }
 
-#[inline]
+#[inline(always)]
 #[allow(clippy::unwrap_used)]
 fn get_row_patch<const N: usize, F: Float + ConstZero>(
     row: &[F],

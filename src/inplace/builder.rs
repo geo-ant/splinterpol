@@ -146,11 +146,11 @@ impl SplineInterpolator1d<(), ()> {
     }
 }
 
-impl<B, C, const CB: usize> SplineInterpBuilder<2, B, C, 1, CB> {
+impl<const DIM: usize, B, C, const CB: usize> SplineInterpBuilder<DIM, B, C, 1, CB> {
     #[inline]
-    /// Set the block size for column calculations at compile time, see
+    /// Set the block size for row calculations at compile time, see
     /// the comments on [`crate::inplace::coefficients2d_blocked`].
-    pub fn col_blocksize<const RB: usize>(self) -> SplineInterpBuilder<2, B, C, RB, CB> {
+    pub fn row_blocksize<const RB: usize>(self) -> SplineInterpBuilder<DIM, B, C, RB, CB> {
         let SplineInterpBuilder {
             bspline,
             coeffs,
@@ -164,11 +164,11 @@ impl<B, C, const CB: usize> SplineInterpBuilder<2, B, C, 1, CB> {
     }
 }
 
-impl<const DIM: usize, B, C, const RB: usize> SplineInterpBuilder<DIM, B, C, RB, 1> {
+impl<B, C, const RB: usize> SplineInterpBuilder<2, B, C, RB, 1> {
     #[inline]
-    /// Set the block size for row calculations at compile time, see
+    /// Set the block size for column calculations at compile time, see
     /// the comments on [`crate::inplace::coefficients2d_blocked`].
-    pub fn row_blocksize<const CB: usize>(self) -> SplineInterpBuilder<DIM, B, C, RB, CB> {
+    pub fn col_blocksize<const CB: usize>(self) -> SplineInterpBuilder<2, B, C, RB, CB> {
         let SplineInterpBuilder {
             bspline,
             coeffs,
@@ -297,6 +297,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<1, B, (), RB, CB> 
 impl<B, C> SplineInterpolator2d<B, C> {
     /// Interpolate the value of a single point at the given floating point
     /// coordinate `coord` in the image.
+    #[inline]
     pub fn interp_single<const NWEIGHTS: usize>(
         &self,
         coord: Coord<B::Float>,
@@ -337,6 +338,7 @@ impl<B, C> SplineInterpolator1d<B, C> {
     ///
     /// **Attention**: this function indexes `(row, col)`, which
     /// is `(y,x)` in the common `x,y` coordinate system.
+    #[inline]
     pub fn interp_single<const NWEIGHTS: usize>(&self, pos: B::Float) -> Result<B::Float, Error>
     where
         C: AsRef<[B::Float]>,
@@ -344,5 +346,38 @@ impl<B, C> SplineInterpolator1d<B, C> {
         B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
     {
         interp1d_single::<B, _>(self.coeffs.as_ref(), self.boundary_extension, pos)
+    }
+
+    /// Interpolate at all given positions and write the output values into
+    /// `out`. This is just a convenience interface so you don't have to call
+    /// `interp_single` repeatedly yourself and as such has no secreat sauce
+    /// to make the calls faster. But it also doen't impose any restrictions
+    /// on the ordering of `positions`. Heck, for all I know this could always
+    /// be the same positon, in which case: why are you like this...?
+    ///
+    /// The lengths of the input and output slices must match exactly.
+    pub fn interp_multi<const NWEIGHTS: usize>(
+        &self,
+        positions: &[B::Float],
+        out: &mut [B::Float],
+    ) -> Result<(), Error>
+    where
+        C: AsRef<[B::Float]>,
+        B: BSplineWeights<NWEIGHTS>,
+        B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+    {
+        if positions.len() != out.len() {
+            return Err(Error::Dimensions);
+        }
+
+        positions
+            .iter()
+            .copied()
+            .zip(out.iter_mut())
+            .try_for_each(|(pos, out)| {
+                *out = self.interp_single(pos)?;
+                Ok(())
+            })?;
+        Ok(())
     }
 }
