@@ -305,7 +305,8 @@ impl<B, C> SplineInterpolator2d<B, C> {
     where
         C: AsRef<[B::Float]>,
         B: BSplineWeights<NWEIGHTS>,
-        B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+        B::Float:
+            Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast + core::iter::Sum,
     {
         let width = self.coeffs.width;
         let height = self.coeffs.height;
@@ -343,7 +344,8 @@ impl<B, C> SplineInterpolator1d<B, C> {
     where
         C: AsRef<[B::Float]>,
         B: BSplineWeights<NWEIGHTS>,
-        B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+        B::Float:
+            Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast + core::iter::Sum,
     {
         interp1d_single::<B, _>(self.coeffs.as_ref(), self.boundary_extension, pos)
     }
@@ -364,7 +366,8 @@ impl<B, C> SplineInterpolator1d<B, C> {
     where
         C: AsRef<[B::Float]>,
         B: BSplineWeights<NWEIGHTS>,
-        B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+        B::Float:
+            Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast + core::iter::Sum,
     {
         if positions.len() != out.len() {
             return Err(Error::Dimensions);

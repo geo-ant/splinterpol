@@ -597,19 +597,18 @@ where
     // idx is the first element of the block with `STEP` elements
     let mut idx = end_idx;
     let mut epilogue = signal[end_idx];
-    if BLOCKSIZE > 1
-        && end_idx > BLOCKSIZE {
-            idx -= BLOCKSIZE;
-            while let Some(chunk) = signal[idx..].first_chunk_mut::<BLOCKSIZE>() {
-                *chunk = anticausal_blocked(*chunk, alpha, epilogue);
-                epilogue = chunk[0];
+    if BLOCKSIZE > 1 && end_idx > BLOCKSIZE {
+        idx -= BLOCKSIZE;
+        while let Some(chunk) = signal[idx..].first_chunk_mut::<BLOCKSIZE>() {
+            *chunk = anticausal_blocked(*chunk, alpha, epilogue);
+            epilogue = chunk[0];
 
-                if idx < BLOCKSIZE {
-                    break;
-                }
-                idx -= BLOCKSIZE;
+            if idx < BLOCKSIZE {
+                break;
             }
+            idx -= BLOCKSIZE;
         }
+    }
 
     // tail handling
     // NOTE(geo) for some (probably massive overengineering) we could revisit

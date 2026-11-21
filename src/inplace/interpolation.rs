@@ -73,7 +73,8 @@ pub fn interp2d_single<B, const NW: usize>(
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
-    B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+    B::Float:
+        Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast + core::iter::Sum,
 {
     let Coord { row, col } = coord;
     // NOTE: see the B::weights function. The left hand size index must be (x-R).ceil(), where
@@ -150,7 +151,8 @@ pub fn interp1d_single<B, const NW: usize>(
 ) -> Result<B::Float, Error>
 where
     B: BSplineWeights<NW>,
-    B::Float: Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast,
+    B::Float:
+        Float + FromPrimitive + ToPrimitive + ConstOne + ConstZero + NumCast + core::iter::Sum,
 {
     let fx0 = (pos - B::radius()).ceil();
     let x0 = fx0.to_isize().ok_or(Error::Unrepresentable)?;

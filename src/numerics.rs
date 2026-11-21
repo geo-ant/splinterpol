@@ -1,7 +1,10 @@
 #[cfg(test)]
 mod test;
 
-pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar> {
+pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar>
+where
+    Self::Scalar: core::iter::Sum,
+{
     type Scalar: num_traits::Float;
 
     /// BLAS inspired syntax a*x+y where x = self,y = addend are vectors and
@@ -19,7 +22,7 @@ pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar> {
 
 impl<const N: usize, T> FloatVector for [T; N]
 where
-    T: num_traits::Float + num_traits::ConstZero,
+    T: num_traits::Float + num_traits::ConstZero + core::iter::Sum,
 {
     type Scalar = T;
 
@@ -59,13 +62,31 @@ where
         // see https://github.com/jlogan03/interpn/blob/main/src/interp_math.rs
         // but some care has to be taken whether the terms are even or odd
 
-        // TODO PERF: this is NOT OPTIMAL DESPITE the muladd because we
-        // still have a dependency from one element to the next
+        // NOTE(perf): in my tests, special casing this loop for N==4 (cubic
+        // bspline weights) made the benchmarks for intepolation slightly
+        // but noticeably slower than just leaving the loop here...
+        // we special case the N==4 path here (where the compiler should eliminate
+        // // the branching) because N==4 is important for cubic B-Splines
+        // if N == 4 {
+        //     let first = self[1].fmuladd(other[1], self[0] * other[0]);
+        //     let second = self[3].fmuladd(other[3], self[2] * other[2]);
+        //     first + second
+        // } else {
+        //   TODO PERF: this is NOT OPTIMAL DESPITE the muladd because we
+        //   still have a dependency from one element to the next
+        // loop based (same as zip and fold)
         let mut sum = T::ZERO;
         for j in 0..N {
             sum = self[j].fmuladd(other[j], sum);
         }
         sum
+        // }
+
+        // // NOTE(perf): this is indeed slower when FMA is enabled
+        // self.into_iter()
+        //     .zip(other.into_iter())
+        //     .map(|(v, w)| v * w)
+        //     .sum()
     }
 }
 
