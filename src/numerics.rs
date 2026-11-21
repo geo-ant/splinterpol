@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod test;
 
+/// Utility trait that adds some simple math vector operations to fixed
+/// size arrays of floating point numbers.
 pub trait FloatVector: Copy + IntoIterator<Item = Self::Scalar>
 where
     Self::Scalar: core::iter::Sum,
@@ -75,8 +77,23 @@ where
         //   TODO PERF: this is NOT OPTIMAL DESPITE the muladd because we
         //   still have a dependency from one element to the next
         // loop based (same as zip and fold)
-        let mut sum = T::ZERO;
-        for j in 0..N {
+        // NOTE(geo): interestingly this is very competitive with approaches
+        // that look much smarter like tree based reductions, this still performs
+        // sometimes worse and sometimes better than cleverer approaches. I'm
+        // sure there's a cleverer approach out there that I'm not thinking of.
+        // Maybe fearless simd can help me with out of order sum reductions...
+        // This performs better on N==3 than using the approach that interpn
+        // uses, which looks better because it enables more ILP. Still, this guy
+        // wins in the interpolations.
+        //
+        // I've also played with some tree based reductions where I first
+        // did all the multiplications into one array, then summed adjacent
+        // pairs to the front of a across levels until only self[0] remained.
+        // At least on my android tablet the results were very inconclusive.
+        // But I think I'll have to bench on my stronger machine again, but
+        // still I don't want to overengineer for one system.
+        let mut sum = self[0] * other[0];
+        for j in 1..N {
             sum = self[j].fmuladd(other[j], sum);
         }
         sum
