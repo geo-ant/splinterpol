@@ -97,20 +97,81 @@ where
         }
     });
 
-    let mut sum = [B::Float::ZERO; NW];
+    // NOTE(geo): ON THE CALCULATIONS HERE
+    //
+    // So the interpolation works like this. To interpolate a value
+    // at the given coordinates, we have to find the product
+    //
+    // f = w_y^T P w_x
+    //
+    // where `f` is the scalar interpolated value and w_x, w_y in R^NW are the weight
+    // vectors above and P is a NW x NW matrix representing the coefficient
+    // patch, which is just
+    //
+    //     | -- p_0^T -- |
+    // P = | -- p_1^T -- |
+    //     |     ...     |
+    //
+    // where p_j^T are the NW-vectors of the row patches corresponding to the
+    // row indices above (0 -> row_indices[0], 1->row_indices[1],...)
+    //
+    // This is a vector-matrix-vector product. There are 2 ways I can think
+    // of how to actually calculate this product in a step-wise fashion (that's
+    // without completely unrolling it I guess).
+    //
+    // # VARIANT 1:
+    //
+    // Step 1: q^T = w_y^T P = w_y[0] * p_0^T + w_y[1] * p_1^T + ...
+    // Step 2: f = q^T w_x
+    //
+    // Note that the vector q^T is formed via a scalar*vector sum. Only the
+    // last step needs a dot product.
+    //
+    // # VARIANT 2:
+    //
+    // Step 1: v = P w_x
+    // Step 2: f = w_y^T v
+    //
+    // where we can calculate v[j] = p_j^T w_x independenly but via dot products
+    // and then use a final dot product.
+    //
+    // NOTE(PERF)
+    //
+    // The performance results are a bit inconclusive here and warrant some
+    // further investigation. On my machine (TM), I can see that variant 2
+    // beats variant 1 on larger images (4096x4096) by roughly 5% but shows
+    // a regression by about 2% on the small benchmarked images (128x128).
+
+    // // # VARIANT 1 GROUPING
+    // //
+    // let mut sum = [B::Float::ZERO; NW];
+    // for j in 0..NW {
+    //     let r_j = row_indices[j];
+    //     let wy_j = wy[j];
+    //     let start = coeffs2d.width.get() * r_j;
+    //     let row = coeffs2d
+    //         .data
+    //         .get(start..start.wrapping_add(coeffs2d.width.get()))
+    //         .ok_or(Error::OutOfBounds)?;
+    //     let coeffs = get_row_patch::<NW, _>(row, c0, boundary_extension);
+    //     sum = coeffs.axpy(wy_j, sum);
+    // }
+    // Ok(sum.dot(wx))
+
+    // # VARIANT 2 GROUPING
+    let mut row_values = [B::Float::ZERO; NW];
     for j in 0..NW {
         let r_j = row_indices[j];
-        let wy_j = wy[j];
         let start = coeffs2d.width.get() * r_j;
         let row = coeffs2d
             .data
             .get(start..start.wrapping_add(coeffs2d.width.get()))
             .ok_or(Error::OutOfBounds)?;
         let coeffs = get_row_patch::<NW, _>(row, c0, boundary_extension);
-        sum = coeffs.axpy(wy_j, sum);
+        row_values[j] = coeffs.dot(wx);
     }
 
-    Ok(sum.dot(wx))
+    Ok(wy.dot(row_values))
 }
 
 #[inline]
