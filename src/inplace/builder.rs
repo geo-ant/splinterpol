@@ -149,7 +149,7 @@ impl SplineInterpolator1d<(), ()> {
 impl<const DIM: usize, B, C, const CB: usize> SplineInterpBuilder<DIM, B, C, 1, CB> {
     #[inline]
     /// Set the block size for row calculations at compile time, see
-    /// the comments on [`crate::inplace::coefficients2d_blocked`].
+    /// the comments on [`crate::inplace::coefficients2d`].
     pub fn row_blocksize<const RB: usize>(self) -> SplineInterpBuilder<DIM, B, C, RB, CB> {
         let SplineInterpBuilder {
             bspline,
@@ -167,7 +167,7 @@ impl<const DIM: usize, B, C, const CB: usize> SplineInterpBuilder<DIM, B, C, 1, 
 impl<B, C, const RB: usize> SplineInterpBuilder<2, B, C, RB, 1> {
     #[inline]
     /// Set the block size for column calculations at compile time, see
-    /// the comments on [`crate::inplace::coefficients2d_blocked`].
+    /// the comments on [`crate::inplace::coefficients2d`].
     pub fn col_blocksize<const CB: usize>(self) -> SplineInterpBuilder<2, B, C, RB, CB> {
         let SplineInterpBuilder {
             bspline,
@@ -260,7 +260,7 @@ impl<B, const RB: usize, const CB: usize> SplineInterpBuilder<1, B, (), RB, CB> 
     /// assumed as 1D data for interpolation.
     ///
     /// To understand the meaning of `epsilon` and its recommended values, see
-    /// the documentation of [`crate::inplace::coefficients2d_blocked`].
+    /// the documentation of [`crate::inplace::coefficients2d`].
     /// In short, `epsilon` bounds the _relative_ accuracy of the interpolation
     /// _on the original grid points_. A conservative rule of thumb is to chose
     /// `1e-12` for `f64` data and `1e-6` for `f32`.

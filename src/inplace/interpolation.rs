@@ -12,7 +12,7 @@ mod test;
 ///
 /// **Attention (1)**: Using this function on its own requires passing the same
 /// boundary extension and spline type that was used to compute the coefficients.
-/// If you can use the [`SplineInterpolator1d`](crate::inplace::SplineInterpolator1d)
+/// If you can use the [`SplineInterpolator2d`](crate::inplace::SplineInterpolator2d)
 /// high level interface to this library, please do so as it provides a much more
 /// convenient zero-cost interface that manages this mental load for you.
 ///

@@ -68,12 +68,11 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// B&M remarks in appendix C.1).
 ///
 /// * For `f32` precision, consider `epsilon = 1e-6`.
-/// * Higher epsilon will slightly (but not dramatically) increase computational
-///   complexity of the coefficient calculation.
-/// * For typical use cases, the coefficient calculation is much faster than
-///   the interpolation anyways, so giving a small epsilon here doesn't matter
-///   in the grand scheme of things, unless you have to perform _many_
-///   interpolations.
+/// * Lower epsilon (i.e. higher precision) will slightly (but not dramatically)
+///   increase computational complexity of the coefficient calculation.
+/// * The coefficient calculation only happens once per input, so giving a small
+///   epsilon here matters less in the grand scheme of things when you perform
+///   _many_ interpolations on the same data.
 /// * Even for `f64`, due to numerical precision, `epsilon = 1e-12` is a
 ///   lower limit at which the relative precision guarantee holds exactly.
 ///   Lower epsilons will often still give lower absolute error, but the error

@@ -18,7 +18,7 @@ use splinterpol::bspline::*;
 use splinterpol::inplace::InplaceBoundaryExtension::*;
 use splinterpol::inplace::SplineInterpolator2d;
 // actual image data in row-major layout.
-// Anything that you can convert into // a (mutable) slice will do.
+// Anything that you can convert into a (mutable) slice will do.
 let mut data = vec![1.; 1024 * 768];
 
 // 1. Describe the image layout
@@ -50,7 +50,7 @@ let interp = SplineInterpolator2d::builder(BSpline3::new())
     .build(image_data, epsilon)
     .unwrap();
 
-// 3. use the interpolator to interpolate values at arbitraty coordinates.
+// 3. use the interpolator to interpolate values at arbitrary coordinates.
 let value = interp.interp_single(Coord::x(1.5).y(2.4)).unwrap();
 ```
 
@@ -64,9 +64,9 @@ since the high-level interface has zero runtime-cost.
 
 * **No allocations**.
 * **Safe by default**: no `unsafe` unless explicitly enabled.
-* **Friendly**: zero rutime-cost high-level interfaces for all. Low-level
+* **Friendly**: zero runtime-cost high-level interfaces for all. Low-level
   interfaces for the few usecases that require it.
-* **Explicit**: heavy use of builder patters to make interfaces easy to
+* **Explicit**: heavy use of builder patterns to make interfaces easy to
   use and hard to misuse.
 
 Later versions of the library will add unsafe code for extra functionality
