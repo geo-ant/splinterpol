@@ -1,7 +1,15 @@
 [package]
 name = "splinterpol"
 version = "0.1.0"
+authors = ["geo-ant"]
 edition = "2024"
+license = "Apache-2.0"
+# repository = "https://github.com/geo-ant/splinterpol" TODO!!
+description = "Native 1D and 2D spline interpolation up to degree 12. Fast, accurate, no-std, and no-alloc."
+readme = "README.md"
+categories = ["mathematics", "science", "multimedia::images", "no-std", "no-std::no-alloc"]
+keywords = ["spline", "interpolation", "curve", "image", "no-std"]
+rust-version = "1.89"
 
 [features]
 # enable fused multiply add instructions. Feature gating this is an idea from

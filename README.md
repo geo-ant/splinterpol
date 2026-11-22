@@ -1,6 +1,6 @@
 # splinterpol: Spline Interpolation
 
-Rust-native 1D and 2D spline interpolation up to degree 12. Fast, accurate, 
+Rust-native 1D and 2D spline interpolation up to degree 12. Fast, accurate,
 no-std, and no-alloc.
 
 !! TODO BADGES
