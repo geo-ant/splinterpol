@@ -51,7 +51,7 @@ mod util;
 
 mod sealed;
 
-/// B-splines for interpolation
+/// B-Splines for interpolation
 pub mod bspline;
 
 #[cfg(test)]

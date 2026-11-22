@@ -32,7 +32,7 @@ pub trait BSplinePrefilter<const NPOLES: usize>: BSpline {
     // Also I hate that I can't make this an associated constant, but
     // the Float trait cannot work with this as trait methods in general
     // cannot be const.
-    /// **Internal**. The poles of the BSpline. The number of for a BSpline of degree
+    /// **Internal**. The poles of the B-Spline. The number of for a B-Spline of degree
     /// `n` is `floor(n/2)`, see [B&M 2018](https://www.ipol.im/pub/art/2018/221/).
     fn poles(&self) -> &[Self::Float; NPOLES];
     /// **Internal**. Normalization constant from eq. (75) in the [B&M 2018](https://www.ipol.im/pub/art/2018/221/)

@@ -15,7 +15,7 @@ mod synthetic_image;
 // just a lot of lines in the test so this lives in its own module
 mod interp1d;
 
-// little hack macro to make the spline test function "generic" over the Bspline
+// little hack macro to make the spline test function "generic" over the B-Spline
 // without actually pulling in another generic test dependency for now, because
 // I don't even know if that would play nicely with the #[test_case] stuff
 // that I have going on. Also I have two generic parameters...
@@ -26,7 +26,7 @@ mod interp1d;
 // Then I wouldn't even need recursion. But now I'm quite proud of this
 // macro so that stays in...
 macro_rules! gen_bspline_test {
-    // top level parsing, tailored very specifically to the bspline test
+    // top level parsing, tailored very specifically to the B-Spline test
     (
         // #[splines($Spline:ident<$Scalar:ty> $(,$rest:ty)* $(,)?)]
         #[splines($($splines:tt)*)]
@@ -54,7 +54,7 @@ macro_rules! gen_bspline_test {
     };
 
     // make a concrete implementation that calls the generic implementation
-    // for the first b-spline in the list.
+    // for the first B-Spline in the list.
     (
         @internal,
         splines = {$(,)? $spline:ident<$Scalar:ty> $($rest:tt)*},

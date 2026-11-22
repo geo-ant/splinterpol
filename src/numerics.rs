@@ -65,7 +65,7 @@ where
         // but some care has to be taken whether the terms are even or odd
 
         // NOTE(perf): in my tests, special casing this loop for N==4 (cubic
-        // bspline weights) made the benchmarks for intepolation slightly
+        // B-Spline weights) made the benchmarks for intepolation slightly
         // but noticeably slower than just leaving the loop here...
         // we special case the N==4 path here (where the compiler should eliminate
         // // the branching) because N==4 is important for cubic B-Splines

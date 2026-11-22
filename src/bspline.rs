@@ -16,7 +16,7 @@
 // poles and weights, but we can't use DEGREE/2 or DEGREE+1 as array
 // boundaries. This is doubly true if DEGREE was an associated constant,
 // cause todays Rust wouldn't even allow using DEGREE as the number of
-// elements in an array. But even if we made the BSpline trait generic over
+// elements in an array. But even if we made the B-Spline trait generic over
 // DEGREE, then we still can't use DEGREE/2 or DEGREE+1 as array counts.
 
 /// logic and traits that are used for coefficient calculation
@@ -32,7 +32,7 @@ pub use weights::BSplineWeights;
 
 use crate::sealed::Sealed;
 
-/// alias for the BSpline of order 3
+/// alias for the B-Spline of order 3
 pub type CubicBSpline<T> = BSpline3<T>;
 
 /// A supertrait for a B-Spline describing the floating point type it takes
@@ -48,40 +48,40 @@ pub trait BSpline: Copy + Default + Sealed {
 }
 
 #[derive(Debug, Clone, Copy)]
-/// Unifying underlying type for BSplines of all degrees with floating point type
-/// `T`. Only BSplines of degree 2 up to 12 are actually usable in this library.
+/// Unifying underlying type for B-Splines of all degrees with floating point type
+/// `T`. Only B-Splines of degree 2 up to 12 are actually usable in this library.
 ///
 /// Due to limitations in Rust's const generics, we have to make this type
 /// generic over the polynomial degree `DEGREE` and the number of poles `NPOLES`,
-/// when in fact for any BSpline `NPOLES = floor(DEGREE/2)`. That's why all
-/// usable BSplines in this library have aliases indicating their degree,
+/// when in fact for any B-Spline `NPOLES = floor(DEGREE/2)`. That's why all
+/// usable B-Splines in this library have aliases indicating their degree,
 /// such as `BSpline2`, `BSpline3`, ... , `BSpline12`. Still, this type _might_
-/// come in handy in interfaces accepting BSplines generically.
+/// come in handy in interfaces accepting B-Splines generically.
 pub struct BasisSpline<T, const DEGREE: usize, const NPOLES: usize> {
     poles: [T; NPOLES],
 }
 
-/// BSpline of polynomial degree 2
+/// B-Spline of polynomial degree 2
 pub type BSpline2<T> = BasisSpline<T, 2, 1>;
-/// BSpline of polynomial degree 3
+/// B-Spline of polynomial degree 3
 pub type BSpline3<T> = BasisSpline<T, 3, 1>;
-/// BSpline of polynomial degree 4
+/// B-Spline of polynomial degree 4
 pub type BSpline4<T> = BasisSpline<T, 4, 2>;
-/// BSpline of polynomial degree 5
+/// B-Spline of polynomial degree 5
 pub type BSpline5<T> = BasisSpline<T, 5, 2>;
-/// BSpline of polynomial degree 6
+/// B-Spline of polynomial degree 6
 pub type BSpline6<T> = BasisSpline<T, 6, 3>;
-/// BSpline of polynomial degree 7
+/// B-Spline of polynomial degree 7
 pub type BSpline7<T> = BasisSpline<T, 7, 3>;
-/// BSpline of polynomial degree 8
+/// B-Spline of polynomial degree 8
 pub type BSpline8<T> = BasisSpline<T, 8, 4>;
-/// BSpline of polynomial degree 9
+/// B-Spline of polynomial degree 9
 pub type BSpline9<T> = BasisSpline<T, 9, 4>;
-/// BSpline of polynomial degree 10
+/// B-Spline of polynomial degree 10
 pub type BSpline10<T> = BasisSpline<T, 10, 5>;
-/// BSpline of polynomial degree 11
+/// B-Spline of polynomial degree 11
 pub type BSpline11<T> = BasisSpline<T, 11, 5>;
-/// BSpline of polynomial degree 12
+/// B-Spline of polynomial degree 12
 pub type BSpline12<T> = BasisSpline<T, 12, 6>;
 
 macro_rules! impl_bspline {

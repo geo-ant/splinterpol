@@ -101,7 +101,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 ///
 /// ## Example
 ///
-/// The example below calculates the cubic (=order 3) B-spline coefficients
+/// The example below calculates the cubic (=order 3) B-Spline coefficients
 /// for a given row-major image and overwrites the image data with the coefficients.
 /// uses block size of `8` for rows and `1` for columns.
 ///
@@ -144,7 +144,7 @@ use num_traits::{ConstOne, ConstZero, Float};
 /// ## References
 ///
 /// * [B&M](https://www.ipol.im/pub/art/2018/221/) t. briand, p. monasse: "Theory
-///   and Practice of Image B-spline Interpolation"
+///   and Practice of Image B-Spline Interpolation"
 /// * [`scipy.ndimage.spline_filter`](https://docs.scipy.org/doc/scipy/reference/generated/scipy.ndimage.spline_filter.html#scipy.ndimage.spline_filter).
 pub fn coefficients2d<
     B,

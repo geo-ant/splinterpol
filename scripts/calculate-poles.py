@@ -1,7 +1,7 @@
 # a little utility script that can calculate the roots of the \tilde{B}^(n)(z)
 # polynomial in Briand and Monasse, appendix A.1 with arbitraty precision.
 # I could already observe (through failing tests) that the poles of the
-# BSpline of degree 4 are not correct within float64 precision in their reference
+# B-Spline of degree 4 are not correct within float64 precision in their reference
 # implementation.
 
 from fractions import Fraction as frac

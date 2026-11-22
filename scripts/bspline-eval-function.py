@@ -1,5 +1,5 @@
 # little bit of code generation for evaluating the piecewise functional
-# form of a b-spline of arbitrary (but given) degree.
+# form of a B-Spline of arbitrary (but given) degree.
 # The relevant section form the Briand & Monasse paper is 2.3
 
 import sympy as sp

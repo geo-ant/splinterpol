@@ -13,12 +13,12 @@ mod test;
 /// **Note** The number `NWEIGHTS` is the number of elements in the weight
 /// vector (`interpn` calls it the _footprint_) used for evaluating the values
 /// of the spline around the grid points for interpolation. The number of
-/// weights is exactly `n+1` for a BSpline with polynomial degree `n`.
+/// weights is exactly `n+1` for a B-Spline with polynomial degree `n`.
 pub trait BSplineWeights<const NWEIGHTS: usize>: BSpline {
     /// **Internal.** The radius of the B-Spline support. This is always
     /// `(NWEIGHTS as Float)/2.0`
     fn radius() -> Self::Float;
-    /// **Internal.** Calculate the B-spline weights needed for interpolation
+    /// **Internal.** Calculate the B-Spline weights needed for interpolation
     // NOTE: The weights and the interpolation logic need to go hand in hand.
     // This crate expects t to be calculated as `t = x - (x-R).ceil()`
     // where `x` is the coordinate (row or col index) and `R` is the radius
