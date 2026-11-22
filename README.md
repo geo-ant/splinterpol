@@ -3,7 +3,8 @@
 Rust-native 1D and 2D spline interpolation up to degree 12. Fast, accurate,
 no-std, and no-alloc.
 
-!! TODO BADGES
+[![CI](https://github.com/geo-ant/splinterpol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/geo-ant/splinterpol/actions/workflows/ci.yml)
+[![crates.io](https://img.shields.io/crates/v/splinterpol.svg)](https://crates.io/crates/splinterpol)
 
 ## Quick Start
 

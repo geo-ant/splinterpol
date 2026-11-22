@@ -34,49 +34,47 @@ fn bench_exponential_filter(c: &mut Criterion) {
             InplaceBoundaryExtension::WholeSymmetric,
             InplaceBoundaryExtension::Periodic,
         ] {
-            group
-                .bench_with_input(
-                    BenchmarkId::new(format!("unblocked/{:?}", ext), size),
-                    &data,
-                    |b, data| {
-                        b.iter_batched(
-                            || data[0..size].to_vec(),
-                            |mut data| {
-                                apply_exponential_filter_in_place::<_, 1>(
-                                    std::hint::black_box(pole),
-                                    data.as_mut_slice(),
-                                    trunc_idx,
-                                    ext,
-                                )
-                                .unwrap();
-                                std::hint::black_box(data)
-                            },
-                            criterion::BatchSize::LargeInput,
-                        );
-                    },
-                );
+            group.bench_with_input(
+                BenchmarkId::new(format!("unblocked/{:?}", ext), size),
+                &data,
+                |b, data| {
+                    b.iter_batched(
+                        || data[0..size].to_vec(),
+                        |mut data| {
+                            apply_exponential_filter_in_place::<_, 1>(
+                                std::hint::black_box(pole),
+                                data.as_mut_slice(),
+                                trunc_idx,
+                                ext,
+                            )
+                            .unwrap();
+                            std::hint::black_box(data)
+                        },
+                        criterion::BatchSize::LargeInput,
+                    );
+                },
+            );
 
-            group
-                .bench_with_input(
-                    BenchmarkId::new(format!("blocked-8/{:?}", ext), size),
-                    &data,
-                    |b, data| {
-                        b.iter_batched(
-                            || data[0..size].to_vec(),
-                            |mut data| {
-                                apply_exponential_filter_in_place::<_, 8>(
-                                    std::hint::black_box(pole),
-                                    data.as_mut_slice(),
-                                    trunc_idx,
-                                    ext,
-                                )
-                                .unwrap();
-                                std::hint::black_box(data)
-                            },
-                            criterion::BatchSize::LargeInput,
-                        );
-                    },
-                );
+            group.bench_with_input(
+                BenchmarkId::new(format!("blocked-8/{:?}", ext), size),
+                &data,
+                |b, data| {
+                    b.iter_batched(
+                        || data[0..size].to_vec(),
+                        |mut data| {
+                            apply_exponential_filter_in_place::<_, 8>(
+                                std::hint::black_box(pole),
+                                data.as_mut_slice(),
+                                trunc_idx,
+                                ext,
+                            )
+                            .unwrap();
+                            std::hint::black_box(data)
+                        },
+                        criterion::BatchSize::LargeInput,
+                    );
+                },
+            );
         }
     }
 }
