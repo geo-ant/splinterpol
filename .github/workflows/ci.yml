@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Stop an older run when a newer commit arrives on the same PR or branch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    name: Format, Clippy, and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+
+      # std and no_std are mutually exclusive. Check each, with and without FMA.
+      - name: Check targets and run Clippy for all feature combinations
+        shell: bash
+        run: |
+          for features in no_std no_std,fma std std,fma; do
+            cargo check --locked --all-targets --no-default-features \
+              --features "$features,__bench_internal"
+            cargo clippy --locked --no-default-features --features "$features"
+          done
+
+      # Only tests the default configuration without fma, since I don't know
+      # if it exists on the runners.
+      - name: Run tests (including doctests)
+        run: cargo test --locked --no-default-features --features no_std

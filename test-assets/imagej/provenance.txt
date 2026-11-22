@@ -1,0 +1,1 @@
+The images here are created from ImageJ/FIJI using Open>Sample Image. Each of the images in here is named like the sample. Samples were transformed to 32bit without contrast adjustment. If samples contained more than one slice, one slice was chosen arbitrarily (what I thought looked nice and challenging). Then the chosen images were written as raw f32 floating point data to disk.

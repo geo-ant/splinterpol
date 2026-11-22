@@ -21,3 +21,23 @@ target
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# Added by cargo
+
+/target
+
+# python stuff
+.venv/
+venv/
+env/
+
+__pycache__/
+*.py[cod]
+
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# just for testing my synth image visually
+debug_image*.raw
