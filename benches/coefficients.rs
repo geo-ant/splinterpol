@@ -54,6 +54,19 @@ fn bench_coefficients_1d(c: &mut Criterion) {
             },
         );
 
+        #[cfg(feature = "__compare_mkl")]
+        {
+            let mut mkl_coeffs = vec![0.; 4 * (len - 1)];
+            let mut mkl_interp =
+                mkl_spline::MklInterpF64::new(&data[..len], &mut mkl_coeffs).unwrap();
+            group.bench_function(BenchmarkId::new("mkl/WholeSymmetric", len), move |b| {
+                b.iter(|| {
+                    mkl_interp.calculate_coefficients().unwrap();
+                    std::hint::black_box(mkl_interp.coefficients());
+                });
+            });
+        }
+
         for ext in [WholeSymmetric, Periodic, Reflected] {
             group.bench_with_input(
                 BenchmarkId::new(format!("splinterpol/unblocked/{ext:?}"), len),

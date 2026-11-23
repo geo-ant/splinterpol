@@ -44,6 +44,7 @@ fn bench_interpolation_1d_random_resample(c: &mut Criterion) {
         let mut out = vec![0.0; len];
 
         group.throughput(Throughput::Elements(len as u64));
+
         group.bench_with_input(
             BenchmarkId::new("interpn/regular", len),
             &access_indices,
@@ -54,6 +55,28 @@ fn bench_interpolation_1d_random_resample(c: &mut Criterion) {
                 });
             },
         );
+
+        #[cfg(feature = "__compare_mkl")]
+        {
+            let mut mkl_coeffs = vec![0.; 4 * (len - 1)];
+            let mut mkl_interp =
+                mkl_spline::MklInterpF64::new(&data[..len], &mut mkl_coeffs).unwrap();
+            mkl_interp.calculate_coefficients().unwrap();
+            let mut mkl_out = vec![0.0; len];
+            group.bench_with_input(
+                BenchmarkId::new("mkl/WholeSymmetric", len),
+                &access_indices,
+                |b, positions| {
+                    b.iter(|| {
+                        mkl_interp
+                            .interp_multi_generic(positions.as_slice(), &mut mkl_out)
+                            .unwrap();
+                        std::hint::black_box(mkl_out.as_slice());
+                    });
+                },
+            );
+        }
+
         group.bench_with_input(
             BenchmarkId::new("splinterpol/WholeSymmetric", len),
             &access_indices,

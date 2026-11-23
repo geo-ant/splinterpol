@@ -41,3 +41,10 @@ dist/
 
 # just for testing my synth image visually
 debug_image*.raw
+
+# Local clangd configuration for the MKL headers.
+/bench-support/mkl-spline/c/.clangd
+
+# Local MKL and rust-analyzer configuration for the support crate.
+/bench-support/mkl-spline/.cargo/config.toml
+/bench-support/mkl-spline/.helix/languages.toml
