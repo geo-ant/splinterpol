@@ -28,7 +28,6 @@ default = ["no_std"]
 # see: docs.rs/crate/num-traits/latest
 # this is the way to use the no-std version of the crate
 num-traits = {version = "0.2", default-features = false}
-interpn = {version = "0.11",  features = ["std", "fma", "deep-unroll"], optional = true}
 
 [dev-dependencies]
 float-cmp = "=0.10"
@@ -37,7 +36,7 @@ criterion = "0.8"
 rayon = "1"
 rand = "0.10"
 paste = "1.0"
-interpn = {version = "0.11",  features = ["deep-unroll"]}
+interpn = {version = "0.11",  features = ["std", "fma", "deep-unroll"]}
 
 [[bench]]
 harness = false

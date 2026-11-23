@@ -33,7 +33,7 @@ use core::num::NonZero;
 #[cfg(test)]
 mod interpn_accuracy;
 
-// #[cfg(feature = "__bench_internal")]
+#[cfg(feature = "__bench_internal")]
 #[doc(hidden)]
 pub mod bench_exports;
 
