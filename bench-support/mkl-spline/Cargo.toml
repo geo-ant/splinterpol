@@ -1,0 +1,18 @@
+[package]
+name = "mkl-spline"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.89"
+publish = false
+
+[features]
+# For rust-analyzer in Helix on my machine, .helix/languages.toml has:
+# [language-server.rust-analyzer.config.cargo]
+# features = ["mkl"]
+# MKLROOT is set in .cargo/config.toml. Both files are local and gitignored.
+mkl = ["dep:intel-mkl-tool", "dep:cc", "dep:bindgen"]
+
+[build-dependencies]
+bindgen = { version = "0.73", optional = true, default-features = false, features = ["runtime"] }
+cc = { version = "1", optional = true }
+intel-mkl-tool = { version = "0.8.1", optional = true, default-features = false }
