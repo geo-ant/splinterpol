@@ -39,5 +39,14 @@ where
             Xoshiro256PlusPlus::from_rng(&mut rng)
         }
     };
+    make_random_data_with_rng(&mut rng, len, range)
+}
+
+/// fill a slice of floats with random numbers with the given RNG.
+pub fn make_random_data_with_rng<R: RngExt, F: Float + FromPrimitive + SampleUniform>(
+    rng: &mut R,
+    len: usize,
+    range: Range<F>,
+) -> Vec<F> {
     (0..len).map(|_| rng.random_range(range.clone())).collect()
 }
