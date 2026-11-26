@@ -24,7 +24,7 @@ no_std = ["num-traits/libm"]
 __bench_internal = []
 # another internal feature to activate benchmarking against mkl
 __compare_mkl = ["mkl-spline/mkl"]
-default = ["no_std", "__compare_mkl"] # <-- TODO remove MKL feature, for dev only
+default = ["no_std"]
 
 [dependencies]
 # see: docs.rs/crate/num-traits/latest
